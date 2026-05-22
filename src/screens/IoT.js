@@ -1,21 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState, useRef } from "react";
-import {
-  Text,
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  Modal,
-  TextInput,
-  RefreshControl,
+import {Text,View,StyleSheet,ScrollView,TouchableOpacity,FlatList,Alert,Modal,TextInput,RefreshControl,
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 
-// Troque pelo IP da sua máquina se testar em device físico
-// Ex: 'http://192.168.1.100:8080'
+// Trocar pelo IP da máquina se testar em device físico
 const API_BASE = "http://localhost:8080";
 const POLL_MS = 5000;
 
