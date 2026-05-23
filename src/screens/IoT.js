@@ -121,7 +121,6 @@ export default function IoT() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      {/* ── Título ── */}
       <View style={styles.cabecalho}>
         <View>
           <Text style={[styles.titulo, { color: t.text }]}>Monitor IoT</Text>
@@ -145,7 +144,6 @@ export default function IoT() {
         </View>
       )}
 
-      {/* ── Seletor de pet ── */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         style={styles.petScroll} contentContainerStyle={styles.petScrollContent}>
         {petsTabs.map((p) => (
@@ -221,7 +219,6 @@ export default function IoT() {
         <Button label={`Ver Log MQTT / HTTP${logs.length > 0 ? "  ("+logs.length+")" : ""}`} variant="outline" onPress={() => SetModalLog(true)} icon={<MaterialIcons name="terminal" size={18} color={t.btnOutlineText} />} style={{ marginTop: 8 }} />
       </ScrollView>
 
-      {/* ── Modal logs ── */}
       <Modal visible={modalLog} animationType="slide" transparent>
         <View style={[styles.modalFundo, { backgroundColor: t.modalFundo }]}>
           <View style={[styles.modalContainer, { backgroundColor: t.modalBg }]}>

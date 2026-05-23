@@ -88,7 +88,6 @@ export default function Home({ navigation }) {
         <RefreshControl refreshing={atualizando} onRefresh={aoAtualizar} colors={[t.primary]} />
       }
     >
-      {/* ── Saudação ── */}
       <View style={styles.saudacao}>
         <View>
           <Text style={[styles.saudacaoTexto, { color: t.text }]}>
@@ -107,7 +106,6 @@ export default function Home({ navigation }) {
         </View>
       </View>
 
-      {/* ── Atalhos ── */}
       <View style={styles.atalhos}>
         {[
           { icone: "vaccines",       cor: t.primary,  bg: t.primaryBg,  label: "Vacinas",   tela: "Vacinas"   },
@@ -124,7 +122,6 @@ export default function Home({ navigation }) {
         ))}
       </View>
 
-      {/* ── Card IoT ── */}
       <View style={styles.secaoHeader}>
         <Text style={[styles.secaoTitulo, { color: t.text }]}>Monitor IoT</Text>
         <TouchableOpacity onPress={() => navigation.navigate("IoT")}>
@@ -185,7 +182,6 @@ export default function Home({ navigation }) {
         </View>
       </TouchableOpacity>
 
-      {/* ── Próximas doses ── */}
       <View style={styles.secaoHeader}>
         <Text style={[styles.secaoTitulo, { color: t.text }]}>Próximas Doses</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Vacinas")}>
@@ -225,7 +221,6 @@ export default function Home({ navigation }) {
         ))
       )}
 
-      {/* ── Meus pets ── */}
       {pets.length > 0 && (
         <>
           <View style={styles.secaoHeader}>
