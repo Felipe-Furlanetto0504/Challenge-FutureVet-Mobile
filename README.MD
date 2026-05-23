@@ -342,18 +342,3 @@ Quando `source` for `"wokwi_mqtt"`, o app está recebendo dados reais do ESP32. 
 | João Victor Bueno Castelini da Silva | RM564115 | [@Buenozw](https://github.com/Buenozw) |
 
 ---
-
-## 📊 Critérios de Avaliação FIAP
-
-| Critério | Pontos | Como atendemos |
-|---|---|---|
-| Aplicação técnica de IoT | 50 pts | ESP32-S3 + DS18B20 + MAX30102 + MPU-6050 + MQTT + API REST |
-| Clareza da apresentação em vídeo | 20 pts | Vídeo pitch com demo funcional no YouTube |
-| Organização do repositório | 20 pts | README completo, estrutura clara, código comentado |
-| Disrupção / Inovação | 10 pts | Captura de leitura IoT vinculada ao prontuário da consulta |
-
----
-
-## 📄 Licença
-
-Projeto acadêmico desenvolvido para fins educacionais — FIAP 2025.
