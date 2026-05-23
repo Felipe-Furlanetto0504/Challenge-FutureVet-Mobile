@@ -5,7 +5,7 @@ import {
   FlatList, Alert, Modal, RefreshControl,
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
-import { useTheme } from "../theme";
+import { useTheme, Button, Chip } from "../theme";
 
 const API_BASE = "http://localhost:8080";
 const POLL_MS  = 5000;
@@ -15,13 +15,6 @@ const LIMITES = {
   cat:    { temp: [38.0, 39.5], hr: [120, 220] },
   rabbit: { temp: [38.5, 40.0], hr: [140, 300] },
 };
-
-const ALERTAS_PREVENTIVOS = [
-  { id: "1", icone: "medication",     cor: "#e74c3c", titulo: "Vermífugo atrasado",   detalhe: "Venceu há 12 dias · Push enviado", badge: "Urgente"    },
-  { id: "2", icone: "vaccines",       cor: "#f39c12", titulo: "V10 — reforço anual",  detalhe: "Vence em 18 dias · Agendado",      badge: "18 dias"    },
-  { id: "3", icone: "local-hospital", cor: "#4A90E2", titulo: "Consulta preventiva",  detalhe: "Última: 4 meses atrás",            badge: "Recomendar" },
-  { id: "4", icone: "bug-report",     cor: "#27ae60", titulo: "Pulga & Carrapato",    detalhe: "Próxima dose: em 5 dias",          badge: "5 dias"     },
-];
 
 export default function IoT() {
   const { t } = useTheme();
@@ -112,8 +105,7 @@ export default function IoT() {
   const s       = leitura?.sensors;
   const especie = leitura?.species || "dog";
   const lim     = LIMITES[especie] || LIMITES.dog;
-  const score   = Math.round(leitura?.health_score || 0);
-  const bat     = leitura?.battery_pct || 0;
+
   const alertasSensor = leitura?.alerts || [];
 
   const stTemp = s ? statusTemperatura(s.temperature_celsius, lim) : null;
@@ -126,7 +118,6 @@ export default function IoT() {
     ...petsStorage.map((p) => ({ id: p.id, emoji: "🐾", label: p.nome })),
   ];
 
-  const corBat = bat > 50 ? t.success : bat > 20 ? t.warning : t.danger;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -158,16 +149,7 @@ export default function IoT() {
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         style={styles.petScroll} contentContainerStyle={styles.petScrollContent}>
         {petsTabs.map((p) => (
-          <TouchableOpacity key={p.id}
-            style={[styles.petChip, { backgroundColor: t.surfaceCard, borderColor: t.surfaceCard },
-              petSelecionado === p.id && { backgroundColor: t.primaryBg, borderColor: t.primary }]}
-            onPress={() => SetPetSelecionado(p.id)}>
-            <Text style={styles.petChipEmoji}>{p.emoji}</Text>
-            <Text style={[styles.petChipTexto, { color: t.muted },
-              petSelecionado === p.id && { color: t.primary, fontWeight: "bold" }]}>
-              {p.label}
-            </Text>
-          </TouchableOpacity>
+          <Chip key={p.id} label={p.emoji + " " + p.label} ativo={petSelecionado === p.id} onPress={() => SetPetSelecionado(p.id)} />
         ))}
       </ScrollView>
 
@@ -206,39 +188,6 @@ export default function IoT() {
               ))}
             </View>
 
-            {/* Bateria */}
-            <View style={[styles.cardBateria, { backgroundColor: t.surfaceCard }]}>
-              <View style={styles.cardBateriaHeader}>
-                <MaterialIcons name="battery-full" size={20} color={corBat} />
-                <Text style={[styles.cardBateriaLabel, { color: t.text }]}>Bateria da coleira</Text>
-                <Text style={[styles.cardBateriaValor, { color: corBat }]}>{bat}%</Text>
-              </View>
-              <View style={[styles.barraFundo, { backgroundColor: t.border }]}>
-                <View style={[styles.barraPreenchida, { width: `${bat}%`, backgroundColor: corBat }]} />
-              </View>
-            </View>
-
-            {/* Score */}
-            <View style={[styles.cardScore, { backgroundColor: t.surfaceCard }]}>
-              <View style={styles.cardScoreEsquerda}>
-                <Text style={[styles.cardScoreNumero, { color: t.primary }]}>{score}</Text>
-                <Text style={[styles.cardScoreLabel, { color: t.muted }]}>/100</Text>
-                <Text style={[styles.cardScoreSub, { color: t.muted }]}>Score de Saúde</Text>
-              </View>
-              <View style={styles.cardScoreDireita}>
-                {[
-                  { label: "Vacinas",    valor: "5/5",      cor: t.success  },
-                  { label: "Consultas",  valor: "2/3",      cor: t.warning  },
-                  { label: "Vermífugo",  valor: "Atrasado", cor: t.danger   },
-                  { label: "Bateria",    valor: bat + "%",  cor: corBat     },
-                ].map((item, i) => (
-                  <View key={i} style={styles.cardScoreLinha}>
-                    <Text style={[styles.cardScoreLinhaLabel, { color: t.text2 }]}>{item.label}</Text>
-                    <Text style={[styles.cardScoreLinhaValor, { color: item.cor }]}>{item.valor}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
 
             {alertasSensor.length > 0 && (
               <>
@@ -267,33 +216,9 @@ export default function IoT() {
           </View>
         )}
 
-        <Text style={[styles.secaoTitulo, { color: t.text }]}>Alertas Preventivos</Text>
-        {ALERTAS_PREVENTIVOS.map((a) => (
-          <View key={a.id} style={[styles.card, { backgroundColor: t.surfaceCard }]}>
-            <View style={[styles.cardIcone, { backgroundColor: a.cor + "22" }]}>
-              <MaterialIcons name={a.icone} size={22} color={a.cor} />
-            </View>
-            <View style={styles.cardInfo}>
-              <Text style={[styles.cardNome, { color: t.text }]}>{a.titulo}</Text>
-              <Text style={[styles.cardDetalhe, { color: t.text2 }]}>{a.detalhe}</Text>
-            </View>
-            <View style={[styles.badgePequeno, { backgroundColor: a.cor + "22" }]}>
-              <Text style={[styles.badgePequenoTexto, { color: a.cor }]}>{a.badge}</Text>
-            </View>
-          </View>
-        ))}
 
-        <TouchableOpacity
-          style={[styles.botaoLog, { backgroundColor: t.primaryBg, borderColor: t.primary }]}
-          onPress={() => SetModalLog(true)}>
-          <MaterialIcons name="terminal" size={20} color={t.primary} />
-          <Text style={[styles.botaoLogTexto, { color: t.primary }]}>Ver Log MQTT / HTTP</Text>
-          {logs.length > 0 && (
-            <View style={[styles.badgeLog, { backgroundColor: t.primary }]}>
-              <Text style={styles.badgeLogTexto}>{logs.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+
+        <Button label={`Ver Log MQTT / HTTP${logs.length > 0 ? "  ("+logs.length+")" : ""}`} variant="outline" onPress={() => SetModalLog(true)} icon={<MaterialIcons name="terminal" size={18} color={t.btnOutlineText} />} style={{ marginTop: 8 }} />
       </ScrollView>
 
       {/* ── Modal logs ── */}
@@ -326,10 +251,7 @@ export default function IoT() {
                   </View>
                 )} />
             )}
-            <TouchableOpacity style={styles.botaoLimparLog}
-              onPress={() => { SetLogs([]); SetModalLog(false); }}>
-              <Text style={[styles.botaoLimparLogTexto, { color: t.danger }]}>Limpar logs</Text>
-            </TouchableOpacity>
+            <Button label="Limpar logs" variant="danger" onPress={() => { SetLogs([]); SetModalLog(false); }} style={{ marginTop: 16 }} />
           </View>
         </View>
       </Modal>
@@ -361,21 +283,8 @@ const styles = StyleSheet.create({
   cardSensorUnidade:     { fontSize: 13, fontWeight: "400" },
   cardSensorStatus:      { flexDirection: "row", alignItems: "center", gap: 4 },
   cardSensorStatusTexto: { fontSize: 11, fontWeight: "500" },
-  cardBateria:           { borderRadius: 12, padding: 14, marginBottom: 12 },
-  cardBateriaHeader:     { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
-  cardBateriaLabel:      { fontSize: 14, fontWeight: "500", flex: 1 },
-  cardBateriaValor:      { fontSize: 16, fontWeight: "bold" },
   barraFundo:            { height: 6, borderRadius: 3, overflow: "hidden" },
   barraPreenchida:       { height: 6, borderRadius: 3 },
-  cardScore:             { borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 16 },
-  cardScoreEsquerda:     { alignItems: "center", minWidth: 70 },
-  cardScoreNumero:       { fontSize: 40, fontWeight: "bold", lineHeight: 44 },
-  cardScoreLabel:        { fontSize: 14 },
-  cardScoreSub:          { fontSize: 11, marginTop: 4, textAlign: "center" },
-  cardScoreDireita:      { flex: 1, gap: 6 },
-  cardScoreLinha:        { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardScoreLinhaLabel:   { fontSize: 13 },
-  cardScoreLinhaValor:   { fontSize: 13, fontWeight: "bold" },
   card:                  { flexDirection: "row", alignItems: "center", borderRadius: 12, padding: 14, marginBottom: 10 },
   cardAlertaUrgente:     { borderLeftWidth: 3, borderLeftColor: "#e74c3c" },
   cardIcone:             { width: 44, height: 44, borderRadius: 10, justifyContent: "center", alignItems: "center", marginRight: 12 },

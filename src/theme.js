@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { TouchableOpacity, Text } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LIGHT = {
@@ -26,6 +27,7 @@ const LIGHT = {
   divisor:      "#dddddd",
   avatarBg:     "#4A90E2",
   inputBg:      "#f2f2f2",
+  btnOutlineText: "#4A90E2",
 };
 
 const DARK = {
@@ -53,6 +55,7 @@ const DARK = {
   divisor:      "#2a2a2a",
   avatarBg:     "#1a4a7a",
   inputBg:      "#252525",
+  btnOutlineText: "#4A90E2",
 };
 
 export const ThemeContext = createContext({
@@ -87,4 +90,62 @@ export function ThemeProvider({ children }) {
 
 export function useTheme() {
   return useContext(ThemeContext);
+}
+
+export function Chip({ label, ativo, onPress }) {
+  const { t } = useContext(ThemeContext);
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: ativo ? t.primary : t.border,
+        backgroundColor: ativo ? t.primaryBg : "transparent",
+      }}
+    >
+      <Text style={{ fontSize: 13, fontWeight: "500", color: ativo ? t.primary : t.text }}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+export function Button({ label, variant = "primary", onPress, icon, style }) {
+  const { t } = useContext(ThemeContext);
+  const bg =
+    variant === "danger"  ? t.dangerBg :
+    variant === "outline" ? "transparent" :
+    t.primary;
+  const borderColor =
+    variant === "danger"  ? t.danger :
+    t.primary;
+  const textColor =
+    variant === "danger"  ? t.danger :
+    variant === "outline" ? t.primary :
+    "#fff";
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={[{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor,
+        backgroundColor: bg,
+      }, style]}
+    >
+      {icon}
+      <Text style={{ fontWeight: "bold", fontSize: 15, color: textColor }}>{label}</Text>
+    </TouchableOpacity>
+  );
 }
