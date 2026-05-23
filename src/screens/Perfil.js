@@ -320,9 +320,19 @@ export default function Perfil({ navigation }) {
               placeholder="Ex: 2 anos, 6 meses..." placeholderTextColor={t.placeholder} />
 
             <Text style={[styles.inputLabel, { color: t.text }]}>Tamanho</Text>
-            <TextInput value={tamanhoPet} onChangeText={SetTamanhoPet}
-              style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
-              placeholder="Ex: Pequeno, Médio, Grande..." placeholderTextColor={t.placeholder} />
+            <View style={styles.especieGrid}>
+              {["Pequeno", "Médio", "Grande"].map((tam) => (
+                <TouchableOpacity key={tam}
+                  style={[styles.especieOpcao, { backgroundColor: t.inputBg, borderColor: t.inputBg },
+                    tamanhoPet === tam && { backgroundColor: t.primaryBg, borderColor: t.primary }]}
+                  onPress={() => SetTamanhoPet(tam)}>
+                  <Text style={[styles.especieOpcaoTexto, { color: t.muted },
+                    tamanhoPet === tam && { color: t.primary, fontWeight: "bold" }]}>
+                    {tam}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <Text style={[styles.inputLabel, { color: t.text }]}>Peso</Text>
             <TextInput value={pesoPet} onChangeText={SetPesoPet}

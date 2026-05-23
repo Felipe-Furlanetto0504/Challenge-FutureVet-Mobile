@@ -1,14 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import {
-  Text,
-  View,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  Modal,
-  ScrollView,
+import {Text,View,TextInput,TouchableOpacity,FlatList,Alert,Modal,ScrollView,
 } from "react-native";
 import { MaskedTextInput } from "react-native-mask-text";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
