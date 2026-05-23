@@ -1,10 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import {Text,View,StyleSheet,TextInput,TouchableOpacity,FlatList,Alert,Modal,ScrollView,} from "react-native";
+import {
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  Alert,
+  Modal,
+  ScrollView,
+} from "react-native";
 import { MaskedTextInput } from "react-native-mask-text";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { useTheme } from "../theme";
 
 export default function Consultas() {
+  const { t } = useTheme();
   const [consultas, SetConsultas] = useState([]);
   const [modalVisivel, SetModalVisivel] = useState(false);
   const [nomePet, SetNomePet] = useState("");
@@ -70,46 +81,47 @@ export default function Consultas() {
     const mes = partes[1] || "--";
 
     return (
-      <View style={styles.card}>
-        <View style={styles.cardData}>
-          <Text style={styles.cardDia}>{dia}</Text>
-          <Text style={styles.cardMes}>/{mes}</Text>
+      <View style={styles(t).card}>
+        <View style={styles(t).cardData}>
+          <Text style={styles(t).cardDia}>{dia}</Text>
+          <Text style={styles(t).cardMes}>/{mes}</Text>
         </View>
 
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardNomeConsulta}>{item.nomeConsulta}</Text>
+        <View style={styles(t).cardInfo}>
+          <Text style={styles(t).cardNomeConsulta}>{item.nomeConsulta}</Text>
 
-          <View style={styles.cardPetContainer}>
-            <FontAwesome5 name="paw" size={11} color="#4A90E2" />
-            <Text style={styles.cardPet}>{item.nomePet}</Text>
+          <View style={styles(t).cardPetContainer}>
+            <FontAwesome5 name="paw" size={11} color={t.primary} />
+            <Text style={styles(t).cardPet}>{item.nomePet}</Text>
           </View>
 
-          <View style={styles.cardLinha}>
-            <MaterialIcons name="access-time" size={13} color="#888" />
-            <Text style={styles.cardDetalhe}> {item.hora}</Text>
+          <View style={styles(t).cardLinha}>
+            <MaterialIcons name="access-time" size={13} color={t.muted} />
+            <Text style={styles(t).cardDetalhe}> {item.hora}</Text>
           </View>
 
-          <View style={styles.cardLinha}>
-            <MaterialIcons name="location-on" size={13} color="#888" />
-            <Text style={styles.cardDetalhe}> {item.local}</Text>
+          <View style={styles(t).cardLinha}>
+            <MaterialIcons name="location-on" size={13} color={t.muted} />
+            <Text style={styles(t).cardDetalhe}> {item.local}</Text>
           </View>
         </View>
 
-        <TouchableOpacity onPress={() => excluirConsulta(item.id)} style={styles.cardExcluir}>
-          <MaterialIcons name="delete-outline" size={24} color="#e74c3c" />
+        <TouchableOpacity onPress={() => excluirConsulta(item.id)} style={styles(t).cardExcluir}>
+          <MaterialIcons name="delete-outline" size={24} color={t.danger} />
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Consultas</Text>
+    <View style={styles(t).container}>
+      <Text style={styles(t).titulo}>Consultas</Text>
 
       {consultas.length === 0 ? (
-        <View style={styles.vazio}>
-          <MaterialIcons name="local-hospital" size={60} color="#ccc" />
-          <Text style={styles.vazioTexto}>Nenhuma consulta agendada</Text>
+        <View style={styles(t).vazio}>
+          <MaterialIcons name="local-hospital" size={60} color={t.muted} />
+          <Text style={styles(t).vazioTexto}>Nenhuma consulta agendada</Text>
+          <Text style={styles(t).vazioSubTexto}>Toque no + para adicionar</Text>
         </View>
       ) : (
         <FlatList
@@ -120,79 +132,80 @@ export default function Consultas() {
         />
       )}
 
-      
-      <TouchableOpacity style={styles.botaoAdicionar} onPress={() => SetModalVisivel(true)}>
+      <TouchableOpacity style={styles(t).botaoAdicionar} onPress={() => SetModalVisivel(true)}>
         <MaterialIcons name="add" size={22} color="#fff" />
-        <Text style={styles.botaoAdicionarTexto}>Nova Consulta</Text>
+        <Text style={styles(t).botaoAdicionarTexto}>Nova Consulta</Text>
       </TouchableOpacity>
 
-      
       <Modal visible={modalVisivel} animationType="fade" transparent>
-        <View style={styles.modalFundo}>
-          <View style={styles.modalContainer}>
-
-            
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitulo}>Nova Consulta</Text>
+        <View style={styles(t).modalFundo}>
+          <View style={styles(t).modalContainer}>
+            <View style={styles(t).modalHeader}>
+              <Text style={styles(t).modalTitulo}>Nova Consulta</Text>
               <TouchableOpacity onPress={() => SetModalVisivel(false)}>
-                <MaterialIcons name="close" size={24} color="#888" />
+                <MaterialIcons name="close" size={24} color={t.muted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.label}>Nome do Pet</Text>
+              <Text style={styles(t).label}>Nome do Pet</Text>
               <TextInput
                 value={nomePet}
                 onChangeText={SetNomePet}
-                style={styles.input}
+                style={styles(t).input}
                 placeholder="Ex: Rex, Mia, Bolinha..."
+                placeholderTextColor={t.muted}
               />
 
-              <Text style={styles.label}>Tipo de Consulta</Text>
+              <Text style={styles(t).label}>Tipo de Consulta</Text>
               <TextInput
                 value={nomeConsulta}
                 onChangeText={SetNomeConsulta}
-                style={styles.input}
+                style={styles(t).input}
                 placeholder="Ex: Retorno, Check-up, Cirurgia..."
+                placeholderTextColor={t.muted}
               />
 
-              <Text style={styles.label}>Data</Text>
+              <Text style={styles(t).label}>Data</Text>
               <MaskedTextInput
                 mask="99/99/9999"
                 value={data}
                 onChangeText={(text) => SetData(text)}
-                style={styles.input}
+                style={styles(t).input}
                 keyboardType="numeric"
                 placeholder="DD/MM/AAAA"
+                placeholderTextColor={t.muted}
               />
 
-              <Text style={styles.label}>Hora</Text>
+              <Text style={styles(t).label}>Hora</Text>
               <MaskedTextInput
                 mask="99:99"
                 value={hora}
                 onChangeText={(text) => SetHora(text)}
-                style={styles.input}
+                style={styles(t).input}
                 keyboardType="numeric"
                 placeholder="HH:MM"
+                placeholderTextColor={t.muted}
               />
 
-              <Text style={styles.label}>Local</Text>
-              <View style={styles.localContainer}>
-                <MaterialIcons name="location-on" size={22} color="#888" style={styles.localIcone} />
+              <Text style={styles(t).label}>Local</Text>
+              <View style={styles(t).localContainer}>
+                <MaterialIcons name="location-on" size={22} color={t.muted} style={styles(t).localIcone} />
                 <TextInput
                   value={local}
                   onChangeText={SetLocal}
-                  style={styles.localInput}
+                  style={styles(t).localInput}
                   placeholder="Ex: Clínica VetCare, Pet Shop..."
+                  placeholderTextColor={t.muted}
                 />
               </View>
 
-              <View style={styles.modalBotoes}>
-                <TouchableOpacity style={styles.botaoCancelar} onPress={() => SetModalVisivel(false)}>
-                  <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+              <View style={styles(t).modalBotoes}>
+                <TouchableOpacity style={styles(t).botaoCancelar} onPress={() => SetModalVisivel(false)}>
+                  <Text style={styles(t).botaoCancelarTexto}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.botaoSalvar} onPress={salvarConsulta}>
-                  <Text style={styles.botaoSalvarTexto}>Salvar</Text>
+                <TouchableOpacity style={styles(t).botaoSalvar} onPress={salvarConsulta}>
+                  <Text style={styles(t).botaoSalvarTexto}>Salvar</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -203,10 +216,10 @@ export default function Consultas() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = (t) => ({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: t.bg,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
@@ -214,6 +227,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 20,
+    color: t.text,
   },
   vazio: {
     flex: 1,
@@ -222,20 +236,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   vazioTexto: {
-    color: "#aaa",
+    color: t.muted2,
     fontSize: 16,
     marginTop: 10,
     fontWeight: "bold",
   },
+  vazioSubTexto: {
+    color: t.muted,
+    fontSize: 14,
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: t.surfaceCard,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     borderLeftWidth: 5,
-    borderLeftColor: "#4A90E2",
+    borderLeftColor: t.primary,
     elevation: 2,
     shadowColor: "#000",
     shadowOpacity: 0.08,
@@ -244,7 +262,7 @@ const styles = StyleSheet.create({
   cardData: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EAF2FF",
+    backgroundColor: t.primaryBg,
     borderRadius: 10,
     width: 52,
     height: 52,
@@ -253,12 +271,12 @@ const styles = StyleSheet.create({
   cardDia: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#4A90E2",
+    color: t.primary,
     lineHeight: 22,
   },
   cardMes: {
     fontSize: 13,
-    color: "#4A90E2",
+    color: t.primary,
   },
   cardInfo: {
     flex: 1,
@@ -267,7 +285,7 @@ const styles = StyleSheet.create({
   cardNomeConsulta: {
     fontSize: 15,
     fontWeight: "bold",
-    color: "#333",
+    color: t.text,
   },
   cardPetContainer: {
     flexDirection: "row",
@@ -276,7 +294,7 @@ const styles = StyleSheet.create({
   },
   cardPet: {
     fontSize: 13,
-    color: "#4A90E2",
+    color: t.primary,
     fontWeight: "600",
   },
   cardLinha: {
@@ -285,18 +303,16 @@ const styles = StyleSheet.create({
   },
   cardDetalhe: {
     fontSize: 12,
-    color: "#888",
+    color: t.muted,
   },
   cardExcluir: {
     padding: 4,
   },
-
-  
   botaoAdicionar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#4A90E2",
+    backgroundColor: t.primary,
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
@@ -307,18 +323,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-
-  
   modalFundo: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",   
-    alignItems: "center",       
+    backgroundColor: t.modalFundo,
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   modalContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 20,           
+    backgroundColor: t.modalBg,
+    borderRadius: 20,
     padding: 24,
     width: "100%",
     maxHeight: "80%",
@@ -332,23 +346,24 @@ const styles = StyleSheet.create({
   modalTitulo: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: t.text,
   },
   label: {
     marginTop: 10,
     marginBottom: 4,
-    color: "#333",
+    color: t.text,
   },
   input: {
     width: "100%",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: t.inputBg,
     padding: 10,
     borderRadius: 8,
+    color: t.text,
   },
   localContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: t.inputBg,
     borderRadius: 8,
     width: "100%",
   },
@@ -358,6 +373,7 @@ const styles = StyleSheet.create({
   localInput: {
     flex: 1,
     padding: 10,
+    color: t.text,
   },
   modalBotoes: {
     flexDirection: "row",
@@ -371,16 +387,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e74c3c",
+    borderColor: t.danger,
   },
   botaoCancelarTexto: {
-    color: "#e74c3c",
+    color: t.danger,
     fontWeight: "bold",
     fontSize: 15,
   },
   botaoSalvar: {
     flex: 1,
-    backgroundColor: "#4A90E2",
+    backgroundColor: t.primary,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",

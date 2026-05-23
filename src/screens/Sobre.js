@@ -3,15 +3,15 @@ import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 
 const INTEGRANTES = [
-  { id: "1", nome: "Nome do Integrante 1", rm: "RM000000", github: "https://github.com/usuario1" },
-  { id: "2", nome: "Nome do Integrante 2", rm: "RM000000", github: "https://github.com/usuario2" },
-  { id: "3", nome: "Nome do Integrante 3", rm: "RM000000", github: "https://github.com/usuario3" },
-  { id: "4", nome: "Nome do Integrante 4", rm: "RM000000", github: "https://github.com/usuario4" },
-  { id: "5", nome: "Nome do Integrante 5", rm: "RM000000", github: "https://github.com/usuario5" },
+  { id: "1", nome: "Felipe Furlanetto", rm: "RM562766", github: "https://github.com/Felipe-Furlanetto0504" },
+  { id: "2", nome: "Raul Rezende Iemini Aguiar", rm: "RM564002", github: "https://github.com/Raul-Rezende" },
+  { id: "3", nome: "João Victor Caetano Alves da Silva", rm: "RM562074", github: "https://github.com/joaocaetano1310" },
+  { id: "4", nome: "Ryan Victor da Silva Vetoriano", rm: "RM565667", github: "https://github.com/ryanvetoriano" },
+  { id: "5", nome: "João Victor Bueno Castelini da Silva", rm: "RM564115", github: "https://github.com/Buenozw" },
 ];
 
 const LINKS = {
-  github: "https://github.com/seu-usuario/Challenge-FutureVet",
+  github: "https://github.com/Felipe-Furlanetto0504/Challenge-FutureVet-Mobile",
   video:  "https://youtube.com/watch?v=SEU_VIDEO_ID",
 };
 
@@ -45,7 +45,6 @@ export default function Sobre() {
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}
     >
-      {/* ── Cabeçalho ── */}
       <View style={styles.cabecalho}>
         <View style={[styles.cabecalhoIcone, { backgroundColor: t.primaryBg }]}>
           <FontAwesome5 name="paw" size={32} color={t.primary} />
@@ -58,7 +57,6 @@ export default function Sobre() {
         </Text>
       </View>
 
-      {/* ── Problema ── */}
       <Text style={[styles.secaoTitulo, { color: t.text }]}>O Problema</Text>
       <View style={[styles.card, { backgroundColor: t.surfaceCard }]}>
         <View style={[styles.cardIcone, { backgroundColor: t.dangerBg }]}>
@@ -73,7 +71,6 @@ export default function Sobre() {
         </View>
       </View>
 
-      {/* ── Solução ── */}
       <Text style={[styles.secaoTitulo, { color: t.text }]}>A Solução</Text>
       <View style={[styles.card, { backgroundColor: t.surfaceCard }]}>
         <View style={[styles.cardIcone, { backgroundColor: t.warningBg }]}>
@@ -89,7 +86,6 @@ export default function Sobre() {
         </View>
       </View>
 
-      {/* ── Entregáveis ── */}
       <Text style={[styles.secaoTitulo, { color: t.text }]}>Entregáveis</Text>
       {[
         { icone: "code",               bg: t.surfaceCard, cor: t.text,    nome: "Repositório GitHub",      url: LINKS.github, urlLabel: LINKS.github },
@@ -109,7 +105,6 @@ export default function Sobre() {
         </TouchableOpacity>
       ))}
 
-      {/* ── Tecnologias ── */}
       <Text style={[styles.secaoTitulo, { color: t.text }]}>Tecnologias Utilizadas</Text>
       {TECNOLOGIAS.map((tech) => (
         <View key={tech.nome} style={[styles.card, { backgroundColor: t.surfaceCard }]}>
@@ -123,23 +118,6 @@ export default function Sobre() {
         </View>
       ))}
 
-      {/* ── Critérios FIAP ── */}
-      <Text style={[styles.secaoTitulo, { color: t.text }]}>Critérios de Avaliação</Text>
-      {[
-        { pontos: "50", label: "Aplicação técnica de IoT",         cor: t.primary  },
-        { pontos: "20", label: "Clareza da apresentação em vídeo", cor: t.success  },
-        { pontos: "20", label: "Organização do repositório",       cor: t.warning  },
-        { pontos: "10", label: "Disrupção / Inovação da ideia",    cor: "#9b59b6"  },
-      ].map((c) => (
-        <View key={c.label} style={[styles.card, { backgroundColor: t.surfaceCard }]}>
-          <View style={[styles.badgePontos, { backgroundColor: c.cor + "20" }]}>
-            <Text style={[styles.badgePontosTexto, { color: c.cor }]}>{c.pontos}pts</Text>
-          </View>
-          <Text style={[styles.criterioLabel, { color: t.text }]}>{c.label}</Text>
-        </View>
-      ))}
-
-      {/* ── Time ── */}
       <Text style={[styles.secaoTitulo, { color: t.text }]}>O Time</Text>
       {INTEGRANTES.map((p) => (
         <TouchableOpacity key={p.id} style={[styles.card, { backgroundColor: t.surfaceCard }]}
@@ -155,7 +133,6 @@ export default function Sobre() {
         </TouchableOpacity>
       ))}
 
-      {/* ── Rodapé ── */}
       <View style={[styles.rodape, { borderTopColor: t.divisor }]}>
         <FontAwesome5 name="paw" size={14} color={t.muted2} />
         <Text style={[styles.rodapeTexto, { color: t.muted2 }]}>

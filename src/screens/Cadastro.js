@@ -51,6 +51,8 @@ export default function Cadastro({ navigation }) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.titulo}>Cadastro</Text>
 
+      <Text style={styles.vazioSubTexto}>Seja Bem-Vindo ao FutureVet</Text>
+      
       <Text style={styles.label}>Nome</Text>
       <TextInput
         value={nome}
@@ -152,6 +154,9 @@ const styles = StyleSheet.create({
   },
   olho: {
     paddingHorizontal: 10,
+  },
+    vazioSubTexto: {
+    fontSize: 14,
   },
   botao: {
     marginTop: 24,

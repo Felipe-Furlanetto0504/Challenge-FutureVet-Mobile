@@ -160,7 +160,6 @@ export default function Perfil({ navigation }) {
     >
       <Text style={[styles.titulo, { color: t.text }]}>Seu Perfil</Text>
 
-      {/* ── Avatar ── */}
       <View style={[styles.avatar, { backgroundColor: t.primary }]}>
         <Text style={styles.avatarLetra}>
           {dados.nome.charAt(0).toUpperCase()}
@@ -168,7 +167,6 @@ export default function Perfil({ navigation }) {
       </View>
       <Text style={[styles.nome, { color: t.text }]}>{dados.nome}</Text>
 
-      {/* ── Dados pessoais ── */}
       <View style={[styles.card, { backgroundColor: t.surfaceCard }]}>
         <View style={styles.cardHeaderLinha}>
           <Text style={[styles.secaoTitulo, { color: t.text }]}>Dados pessoais</Text>
@@ -193,7 +191,6 @@ export default function Perfil({ navigation }) {
         ))}
       </View>
 
-      {/* ── Aparência — botão de tema ── */}
       <View style={[styles.card, { backgroundColor: t.surfaceCard, marginTop: 16 }]}>
         <View style={styles.cardHeaderLinha}>
           <Text style={[styles.secaoTitulo, { color: t.text }]}>Aparência</Text>
@@ -226,7 +223,6 @@ export default function Perfil({ navigation }) {
         </View>
       </View>
 
-      {/* ── Meus Pets ── */}
       <View style={[styles.secaoHeader, { width: "100%" }]}>
         <Text style={[styles.secaoTitulo, { color: t.text }]}>Meus Pets</Text>
         <TouchableOpacity
@@ -283,13 +279,11 @@ export default function Perfil({ navigation }) {
         })
       )}
 
-      {/* ── Sair ── */}
       <TouchableOpacity style={[styles.botaoSair, { borderColor: t.danger }]} onPress={sair}>
         <MaterialIcons name="logout" size={20} color={t.danger} />
         <Text style={[styles.botaoSairTexto, { color: t.danger }]}>Sair da conta</Text>
       </TouchableOpacity>
 
-      {/* ── Modal novo pet ── */}
       <Modal visible={modalPet} animationType="slide" transparent>
         <View style={[styles.modalFundo, { backgroundColor: t.modalFundo }]}>
           <ScrollView contentContainerStyle={[styles.modalContainer, { backgroundColor: t.modalBg }]}>
@@ -345,7 +339,6 @@ export default function Perfil({ navigation }) {
         </View>
       </Modal>
 
-      {/* ── Modal editar usuário ── */}
       <Modal visible={modalEditar} animationType="slide" transparent>
         <View style={[styles.modalFundo, { backgroundColor: t.modalFundo }]}>
           <View style={[styles.modalContainer, { backgroundColor: t.modalBg }]}>
