@@ -1,9 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState, useRef } from "react";
 import {
-  Text, View, StyleSheet, ScrollView, TouchableOpacity,
-  FlatList, Alert, Modal, RefreshControl,
-} from "react-native";
+  Text, View, StyleSheet, ScrollView, TouchableOpacity,FlatList, Alert, Modal, RefreshControl,} from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme, Button, Chip } from "../theme";
 

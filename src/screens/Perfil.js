@@ -1,9 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import {
-  Text, View, StyleSheet, TouchableOpacity, Alert,
-  ScrollView, Modal, TextInput, Switch,
-} from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, Alert,ScrollView, Modal, TextInput, Switch,} from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 
