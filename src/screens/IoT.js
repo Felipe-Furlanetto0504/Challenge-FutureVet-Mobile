@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState, useRef } from "react";
-import {
-  Text, View, StyleSheet, ScrollView, TouchableOpacity,FlatList, Alert, Modal, RefreshControl,} from "react-native";
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity,FlatList, Alert, Modal, RefreshControl,} from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme, Button, Chip } from "../theme";
 
@@ -56,7 +55,7 @@ export default function IoT() {
     const base = {
       rex:     { especie: "dog",    temp: 38.5, hr: 90,  steps: 60,  peso: 28.3 },
       luna:    { especie: "cat",    temp: 38.3, hr: 150, steps: 40,  peso: 4.1  },
-      bolinha: { especie: "rabbit", temp: 38.8, hr: 200, steps: 80,  peso: 2.3  },
+
     };
     const p = base[petSelecionado] || base.rex;
     const r = {
@@ -110,9 +109,6 @@ export default function IoT() {
   const stHR   = s ? statusFrequencia(s.heart_rate_bpm, lim) : null;
 
   const petsTabs = [
-    { id: "rex",     emoji: "🐕", label: "Rex"     },
-    { id: "luna",    emoji: "🐈", label: "Luna"    },
-    { id: "bolinha", emoji: "🐇", label: "Bolinha" },
     ...petsStorage.map((p) => ({ id: p.id, emoji: "🐾", label: p.nome })),
   ];
 
