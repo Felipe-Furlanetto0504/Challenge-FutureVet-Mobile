@@ -342,3 +342,7 @@ Quando `source` for `"wokwi_mqtt"`, o app está recebendo dados reais do ESP32. 
 | João Victor Bueno Castelini da Silva | RM564115 | [@Buenozw](https://github.com/Buenozw) |
 
 ---
+
+## 🎥 Link do video narrado: https://youtu.be/K3BgMttZAIc
+
+---
