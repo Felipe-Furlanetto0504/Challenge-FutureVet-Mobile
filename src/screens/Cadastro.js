@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity, ScrollView } from "react-native";
+import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
 import { MaskedTextInput } from "react-native-mask-text";
-import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 
 export default function Cadastro({ navigation }) {
@@ -44,9 +44,11 @@ export default function Cadastro({ navigation }) {
 
       {/* Logo */}
       <View style={s.logoWrap}>
-        <View style={s.logoCircle}>
-          <FontAwesome5 name="paw" size={36} color={t.primary} />
-        </View>
+        <Image
+          source={{ uri: "https://png.pngtree.com/png-vector/20230120/ourmid/pngtree-dog-logo-veterinary-design-clipart-vet-golden-retriever-puppy-clinic-png-image_6565449.png" }}
+          style={s.logoImg}
+          resizeMode="contain"
+        />
         <Text style={s.logoNome}>FutureVet</Text>
         <Text style={s.logoSub}>Crie sua conta para começar</Text>
       </View>
@@ -123,6 +125,11 @@ const styles = (t) => StyleSheet.create({
   logoWrap: {
     alignItems: "center",
     marginBottom: 32,
+  },
+  logoImg: {
+    width: 100,
+    height: 100,
+    marginBottom: 14,
   },
   logoCircle: {
     width: 80,
