@@ -27,9 +27,79 @@ export default function Cadastro({ navigation }) {
   }, []);
 
   async function salvar() {
+  {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cpfLimpo = cpf.replace(/\D/g, "");
+    const telefoneLimpo = telefone.replace(/\D/g, "");
+
+    // CAMPOS VAZIOS
     if (!nome || !email || !senha || !cpf || !telefone) {
-      Alert.alert("Erro", "Preencha todos os campos"); return;
+      Alert.alert("Erro", "Preencha todos os campos.");
+      return;
     }
+
+    // NOME
+    if (nome.trim().length < 3) {
+      Alert.alert("Erro", "O nome deve ter pelo menos 3 caracteres.");
+      return;
+    }
+
+    // EMAIL
+    if (!emailRegex.test(email)) {
+      Alert.alert("Erro", "Digite um e-mail válido.");
+      return;
+    }
+
+    // SENHA
+    if (senha.length < 6) {
+      Alert.alert("Erro", "A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    // CPF
+    if (cpfLimpo.length !== 11) {
+      Alert.alert("Erro", "Digite um CPF válido.");
+      return;
+    }
+
+    // TELEFONE
+    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+      Alert.alert("Erro", "Digite um telefone válido.");
+      return;
+    }
+
+    try {
+      const dados = {
+        nome,
+        email,
+        senha,
+        cpf,
+        telefone,
+      };
+
+      await AsyncStorage.setItem(
+        "INFORMACOES",
+        JSON.stringify(dados)
+      );
+
+      Alert.alert("Sucesso", "Cadastro realizado com sucesso!", [
+        {
+          text: "OK",
+          onPress: () =>
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            }),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert(
+        "Erro",
+        "Não foi possível salvar os dados."
+      );
+      console.log(error);
+    }
+  }
     const dados = { nome, email, senha, cpf, telefone };
     await AsyncStorage.setItem("INFORMACOES", JSON.stringify(dados));
     Alert.alert("Sucesso", "Cadastro realizado!", [{
