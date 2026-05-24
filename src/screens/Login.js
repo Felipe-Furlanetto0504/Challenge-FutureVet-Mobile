@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
-import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity } from "react-native";
-import { Ionicons, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
+import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity, Image } from "react-native";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 
 export default function Login({ navigation }) {
@@ -29,9 +29,11 @@ export default function Login({ navigation }) {
 
       {/* Logo */}
       <View style={s.logoWrap}>
-        <View style={s.logoCircle}>
-          <FontAwesome5 name="paw" size={36} color={t.primary} />
-        </View>
+        <Image
+          source={{ uri: "https://png.pngtree.com/png-vector/20230120/ourmid/pngtree-dog-logo-veterinary-design-clipart-vet-golden-retriever-puppy-clinic-png-image_6565449.png" }}
+          style={s.logoImg}
+          resizeMode="contain"
+        />
         <Text style={s.logoNome}>FutureVet</Text>
         <Text style={s.logoSub}>Saúde inteligente para seu pet</Text>
       </View>
@@ -93,6 +95,11 @@ const styles = (t) => StyleSheet.create({
   logoWrap: {
     alignItems: "center",
     marginBottom: 36,
+  },
+  logoImg: {
+    width: 100,
+    height: 100,
+    marginBottom: 14,
   },
   logoCircle: {
     width: 80,
