@@ -1,115 +1,52 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
-import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity, ScrollView, Image } from "react-native";
+import { useState } from "react";
+import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator } from "react-native";
 import { MaskedTextInput } from "react-native-mask-text";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../theme";
+import { useRegistro } from "../hooks/useAuth";
 
 export default function Cadastro({ navigation }) {
   const { t } = useTheme();
   const [nome, SetNome] = useState("");
   const [email, SetEmail] = useState("");
   const [senha, SetSenha] = useState("");
+  const [confirmacao, SetConfirmacao] = useState("");
   const [cpf, SetCpf] = useState("");
   const [telefone, SetTelefone] = useState("");
   const [mostrarSenha, SetMostrarSenha] = useState(false);
+  const registro = useRegistro();
 
-  useEffect(() => {
-    async function carregar() {
-      const dados = await AsyncStorage.getItem("usuarioLogado");
-      if (dados) {
-        const obj = JSON.parse(dados);
-        SetNome(obj.nome); SetEmail(obj.email); SetSenha(obj.senha);
-        SetCpf(obj.cpf || ""); SetTelefone(obj.telefone || "");
-      }
-    }
-    carregar();
-  }, []);
-
-  async function salvar() {
+  function salvar() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const cpfLimpo = cpf.replace(/\D/g, "");
     const telefoneLimpo = telefone.replace(/\D/g, "");
 
-    if (!nome || !email || !senha || !cpf || !telefone) {
-      Alert.alert("Erro", "Preencha todos os campos.");
-      return;
+    if (!nome || !email || !senha || !confirmacao || !cpf || !telefone) {
+      Alert.alert("Erro", "Preencha todos os campos."); return;
     }
+    if (nome.trim().length < 3) { Alert.alert("Erro", "O nome deve ter pelo menos 3 caracteres."); return; }
+    if (!emailRegex.test(email)) { Alert.alert("Erro", "Digite um e-mail válido."); return; }
+    if (senha.length < 8) { Alert.alert("Erro", "A senha deve ter pelo menos 8 caracteres."); return; }
+    if (senha !== confirmacao) { Alert.alert("Erro", "As senhas não conferem."); return; }
+    if (cpfLimpo.length !== 11) { Alert.alert("Erro", "Digite um CPF válido."); return; }
+    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) { Alert.alert("Erro", "Digite um telefone válido."); return; }
 
-    if (nome.trim().length < 3) {
-      Alert.alert("Erro", "O nome deve ter pelo menos 3 caracteres.");
-      return;
-    }
-
-    if (!emailRegex.test(email)) {
-      Alert.alert("Erro", "Digite um e-mail válido.");
-      return;
-    }
-
-    
-    if (senha.length < 6) {
-      Alert.alert("Erro", "A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
-
-    if (cpfLimpo.length !== 11) {
-      Alert.alert("Erro", "Digite um CPF válido.");
-      return;
-    }
-
-    if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
-      Alert.alert("Erro", "Digite um telefone válido.");
-      return;
-    }
-
-    try {
-      const dados = {
-        nome,
-        email,
-        senha,
-        cpf,
-        telefone,
-      };
-
-      await AsyncStorage.setItem(
-        "usuarioLogado",
-        JSON.stringify(dados)
-      );
-
-      Alert.alert(
-        "Sucesso",
-        "Cadastro realizado com sucesso!",
-        [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-              }),
-          },
-        ]
-      );
-    } catch (error) {
-      Alert.alert(
-        "Erro",
-        "Não foi possível salvar os dados."
-      );
-
-      console.log(error);
-    }
-      const dados = { nome, email, senha, cpf, telefone };
-      await AsyncStorage.setItem("INFORMACOES", JSON.stringify(dados));
-      Alert.alert("Sucesso", "Cadastro realizado!", [{
-        text: "Ir para Login",
-        onPress: () => navigation.reset({ index: 0, routes: [{ name: "Login" }] }),
-      }]);
-    }
+    registro.mutate(
+      { nome: nome.trim(), email: email.trim(), senha, confirmacao, cpf, telefone },
+      {
+        onSuccess: () => {
+          Alert.alert("Sucesso", "Cadastro realizado! Faça login para continuar.", [
+            { text: "OK", onPress: () => navigation.navigate("Login") },
+          ]);
+        },
+        onError: (erro) => Alert.alert("Erro", erro.message || "Não foi possível criar a conta."),
+      }
+    );
+  }
 
   const s = styles(t);
   return (
     <ScrollView style={{ backgroundColor: t.bg }} contentContainerStyle={s.container}>
-
       <View style={s.logoWrap}>
         <Image
           source={{ uri: "https://png.pngtree.com/png-vector/20230120/ourmid/pngtree-dog-logo-veterinary-design-clipart-vet-golden-retriever-puppy-clinic-png-image_6565449.png" }}
@@ -139,10 +76,16 @@ export default function Cadastro({ navigation }) {
         <Campo label="Senha" t={t}>
           <MaterialIcons name="lock-outline" size={18} color={t.muted} style={s.inputIcone} />
           <TextInput value={senha} onChangeText={SetSenha} style={s.input}
-            secureTextEntry={!mostrarSenha} placeholder="••••••••" placeholderTextColor={t.placeholder} />
+            secureTextEntry={!mostrarSenha} placeholder="Mínimo 8 caracteres" placeholderTextColor={t.placeholder} />
           <TouchableOpacity onPress={() => SetMostrarSenha(!mostrarSenha)} style={s.olho}>
             <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={t.muted} />
           </TouchableOpacity>
+        </Campo>
+
+        <Campo label="Confirmar senha" t={t}>
+          <MaterialIcons name="lock-outline" size={18} color={t.muted} style={s.inputIcone} />
+          <TextInput value={confirmacao} onChangeText={SetConfirmacao} style={s.input}
+            secureTextEntry={!mostrarSenha} placeholder="Repita a senha" placeholderTextColor={t.placeholder} />
         </Campo>
 
         <Campo label="CPF" t={t}>
@@ -159,8 +102,14 @@ export default function Cadastro({ navigation }) {
             placeholder="(00) 00000-0000" placeholderTextColor={t.placeholder} />
         </Campo>
 
-        <TouchableOpacity style={s.botao} onPress={salvar} activeOpacity={0.85}>
-          <Text style={s.botaoTexto}>Criar conta</Text>
+        <TouchableOpacity style={s.botao} onPress={salvar} activeOpacity={0.85} disabled={registro.isPending}>
+          {registro.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.botaoTexto}>Criar conta</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate("Login")} style={s.linkWrap}>
+          <Text style={s.linkTexto}>
+            Já tem conta? <Text style={s.linkDestaque}>Entrar</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -183,80 +132,19 @@ function Campo({ label, t, children }) {
 }
 
 const styles = (t) => StyleSheet.create({
-  container: {
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-  logoWrap: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  logoImg: {
-    width: 100,
-    height: 100,
-    marginBottom: 14,
-  },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: t.primaryBg,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 14,
-    borderWidth: 1.5,
-    borderColor: t.primary + "40",
-  },
-  logoNome: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: t.text,
-    letterSpacing: -0.5,
-  },
-  logoSub: {
-    fontSize: 13,
-    color: t.muted,
-    marginTop: 4,
-  },
-  card: {
-    width: "100%",
-    backgroundColor: t.surfaceCard,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: t.border,
-  },
-  titulo: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: t.text,
-    marginBottom: 20,
-  },
-  inputIcone: {
-    paddingLeft: 12,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 13,
-    paddingHorizontal: 10,
-    fontSize: 15,
-    color: t.text,
-  },
-  olho: {
-    paddingHorizontal: 12,
-  },
-  botao: {
-    marginTop: 8,
-    backgroundColor: t.primary,
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-  },
-  botaoTexto: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-    letterSpacing: 0.3,
-  },
+  container: { alignItems: "center", paddingHorizontal: 24, paddingVertical: 48 },
+  logoWrap: { alignItems: "center", marginBottom: 32 },
+  logoImg: { width: 100, height: 100, marginBottom: 14 },
+  logoNome: { fontSize: 28, fontWeight: "800", color: t.text, letterSpacing: -0.5 },
+  logoSub: { fontSize: 13, color: t.muted, marginTop: 4 },
+  card: { width: "100%", backgroundColor: t.surfaceCard, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: t.border },
+  titulo: { fontSize: 18, fontWeight: "700", color: t.text, marginBottom: 20 },
+  inputIcone: { paddingLeft: 12 },
+  input: { flex: 1, paddingVertical: 13, paddingHorizontal: 10, fontSize: 15, color: t.text },
+  olho: { paddingHorizontal: 12 },
+  botao: { marginTop: 8, backgroundColor: t.primary, paddingVertical: 15, borderRadius: 14, alignItems: "center" },
+  botaoTexto: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
+  linkWrap: { marginTop: 16, alignItems: "center" },
+  linkTexto: { color: t.muted, fontSize: 13 },
+  linkDestaque: { color: t.primary, fontWeight: "700" },
 });

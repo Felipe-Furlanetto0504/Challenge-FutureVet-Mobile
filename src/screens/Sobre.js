@@ -50,7 +50,7 @@ export default function Sobre() {
           <FontAwesome5 name="paw" size={32} color={t.primary} />
         </View>
         <Text style={[styles.cabecalhoNome, { color: t.text }]}>PetLink</Text>
-        <Text style={[styles.cabecalhoVersao, { color: t.muted }]}>v1.0.0 · FIAP 2025</Text>
+        <Text style={[styles.cabecalhoVersao, { color: t.muted }]}>v1.0.0 · FIAP 2026</Text>
         <Text style={[styles.cabecalhoDescricao, { color: t.text2 }]}>
           Monitoramento inteligente da saúde dos seus pets via IoT, com sensores
           conectados em tempo real e gestão completa de vacinas e consultas.
@@ -136,7 +136,7 @@ export default function Sobre() {
       <View style={[styles.rodape, { borderTopColor: t.divisor }]}>
         <FontAwesome5 name="paw" size={14} color={t.muted2} />
         <Text style={[styles.rodapeTexto, { color: t.muted2 }]}>
-          FIAP · Disruptive Architectures: IoT, IoB & Generative IA · 1º Sprint 2025
+          FIAP · Disruptive Architectures: IoT, IoB & Generative IA · 3º Sprint 2026
         </Text>
       </View>
     </ScrollView>
