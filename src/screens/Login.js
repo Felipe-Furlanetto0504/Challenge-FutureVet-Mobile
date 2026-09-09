@@ -27,7 +27,6 @@ export default function Login({ navigation }) {
   return (
     <View style={s.container}>
 
-      {/* Logo */}
       <View style={s.logoWrap}>
         <Image
           source={{ uri: "https://png.pngtree.com/png-vector/20230120/ourmid/pngtree-dog-logo-veterinary-design-clipart-vet-golden-retriever-puppy-clinic-png-image_6565449.png" }}
@@ -38,7 +37,6 @@ export default function Login({ navigation }) {
         <Text style={s.logoSub}>Saúde inteligente para seu pet</Text>
       </View>
 
-      {/* Card */}
       <View style={s.card}>
         <Text style={s.titulo}>Entrar na conta</Text>
 

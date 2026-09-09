@@ -85,7 +85,6 @@ export default function Home({ navigation }) {
       refreshControl={<RefreshControl refreshing={atualizando} onRefresh={aoAtualizar} colors={[t.primary]} />}
     >
 
-      {/* ── HEADER ── */}
       <View style={[header.wrap, { backgroundColor: t.surfaceCard, borderBottomColor: t.border }]}>
         <View>
           <Text style={[header.saudacao, { color: t.muted }]}>{saudacao},</Text>
@@ -101,7 +100,6 @@ export default function Home({ navigation }) {
 
       <View style={{ paddingHorizontal: 20 }}>
 
-        {/* ── STATS STRIP ── */}
         <View style={[strip.wrap, { backgroundColor: t.surfaceCard, borderColor: t.border }]}>
           {[
             { val: pets.length,    label: "Pets",      cor: t.primary, icone: "paw",      lib: "fa5"      },
@@ -118,7 +116,6 @@ export default function Home({ navigation }) {
           ))}
         </View>
 
-        {/* ── ATALHOS ── */}
         <Text style={[sec.titulo, { color: t.text, marginTop: 24 }]}>Acesso rápido</Text>
         <View style={atalhos.grid}>
           {[
@@ -145,7 +142,6 @@ export default function Home({ navigation }) {
           ))}
         </View>
 
-        {/* ── IoT CARD ── */}
         <View style={sec.header}>
           <Text style={[sec.titulo, { color: t.text }]}>Monitoramento IoT</Text>
           <TouchableOpacity onPress={() => navigation.navigate("Monitoramento")}>
@@ -157,7 +153,6 @@ export default function Home({ navigation }) {
           style={[iot_card.wrap, { backgroundColor: t.surfaceCard, borderColor: t.border }]}
           onPress={() => navigation.navigate("Monitoramento")}>
 
-          {/* top row */}
           <View style={iot_card.top}>
             <View style={iot_card.petRow}>
               <View style={[iot_card.petIcone, { backgroundColor: t.primaryBg }]}>
@@ -173,7 +168,6 @@ export default function Home({ navigation }) {
             </View>
           </View>
 
-          {/* sensores */}
           {s ? (
             <View style={iot_card.sensores}>
               {[
@@ -197,7 +191,6 @@ export default function Home({ navigation }) {
             </View>
           )}
 
-          {/* score bar */}
           <View style={[iot_card.rodape, { borderTopColor: t.border }]}>
             <View style={iot_card.scoreRow}>
               <Text style={[iot_card.scoreLabel, { color: t.muted }]}>Score de saúde</Text>
@@ -216,7 +209,6 @@ export default function Home({ navigation }) {
           </View>
         </TouchableOpacity>
 
-        {/* ── PRÓXIMAS DOSES ── */}
         <View style={sec.header}>
           <Text style={[sec.titulo, { color: t.text }]}>Próximas Doses</Text>
           <TouchableOpacity onPress={() => navigation.navigate("Vacinas")}>
@@ -258,7 +250,6 @@ export default function Home({ navigation }) {
           })
         )}
 
-        {/* ── MEUS PETS ── */}
         {pets.length > 0 && (
           <>
             <View style={sec.header}>
@@ -299,7 +290,6 @@ export default function Home({ navigation }) {
   );
 }
 
-// ── STYLES ──────────────────────────────────────
 
 const header = StyleSheet.create({
   wrap: {
