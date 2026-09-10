@@ -36,7 +36,7 @@ export default function Cadastro({ navigation }) {
       {
         onSuccess: () => {
           Alert.alert("Sucesso", "Cadastro realizado! Faça login para continuar.", [
-            { text: "OK", onPress: () => navigation.navigate("Login") },
+            { text: "OK", onPress: () => navigation.goBack() },
           ]);
         },
         onError: (erro) => Alert.alert("Erro", erro.message || "Não foi possível criar a conta."),
@@ -106,7 +106,7 @@ export default function Cadastro({ navigation }) {
           {registro.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.botaoTexto}>Criar conta</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate("Login")} style={s.linkWrap}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.linkWrap}>
           <Text style={s.linkTexto}>
             Já tem conta? <Text style={s.linkDestaque}>Entrar</Text>
           </Text>

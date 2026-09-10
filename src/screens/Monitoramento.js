@@ -1,110 +1,171 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity,FlatList, Alert, Modal, RefreshControl,} from "react-native";
+import { useState, useEffect } from "react";
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal, RefreshControl, ActivityIndicator } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme, Button, Chip } from "../theme";
+import { useAnimais } from "../hooks/useAnimais";
 
-const API_BASE = "http://localhost:8080";
-const POLL_MS  = 5000;
+const HISTORICO_MAXIMO = 30;
+const BASELINE_MINIMO = 8;
+const Z_SCORE_LIMITE = 2.0;
 
 const LIMITES = {
-  dog:    { temp: [37.5, 39.2], hr: [60,  120] },
-  cat:    { temp: [38.0, 39.5], hr: [120, 220] },
-  rabbit: { temp: [38.5, 40.0], hr: [140, 300] },
+  CAO:    { temp: [37.5, 39.2], hr: [60,  120] },
+  GATO:   { temp: [38.0, 39.5], hr: [120, 220] },
+  COELHO: { temp: [38.5, 40.0], hr: [140, 300] },
+  OUTRO:  { temp: [37.5, 39.2], hr: [60,  120] },
 };
+
+// Perfil fisiologico base por especie, usado para simular leituras de
+// sensor a partir dos dados reais do pet (peso vem do cadastro do tutor).
+const BASE_POR_ESPECIE = {
+  CAO:    { temp: 38.5, hr: 90,  steps: 60 },
+  GATO:   { temp: 38.3, hr: 150, steps: 40 },
+  COELHO: { temp: 38.9, hr: 220, steps: 50 },
+  OUTRO:  { temp: 38.5, hr: 90,  steps: 60 },
+};
+
+function media(valores) {
+  return valores.reduce((soma, v) => soma + v, 0) / valores.length;
+}
+
+function desvioPadrao(valores, m) {
+  const variancia = valores.reduce((soma, v) => soma + (v - m) ** 2, 0) / valores.length;
+  return Math.sqrt(variancia) || 0.01;
+}
+
+// Gera uma leitura simulada de sensores para o pet. ~20% de chance de
+// simular um quadro de febre + queda de atividade, para permitir
+// demonstrar a deteccao de anomalia mesmo sem hardware conectado.
+function gerarLeitura(pet, forcarAnomalia = false) {
+  const base = BASE_POR_ESPECIE[pet.especie] || BASE_POR_ESPECIE.OUTRO;
+  const simularAnomalia = forcarAnomalia || Math.random() < 0.2;
+
+  const temperature_celsius = parseFloat(
+    (simularAnomalia ? base.temp + 1.3 + Math.random() * 0.4 : base.temp + (Math.random() - 0.5) * 0.6).toFixed(1)
+  );
+  const activity_score = parseFloat(
+    (simularAnomalia ? 0.03 + Math.random() * 0.05 : 0.3 + Math.random() * 0.5).toFixed(2)
+  );
+
+  return {
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+    timestamp: new Date(),
+    species: pet.especie,
+    sensors: {
+      temperature_celsius,
+      heart_rate_bpm:    Math.round(base.hr + (Math.random() - 0.5) * 18),
+      activity_score,
+      steps_last_minute: Math.round(base.steps + (Math.random() - 0.5) * 20),
+      weight_kg:         pet.peso ?? null,
+    },
+  };
+}
+
+// Modelo preditivo local (baseline individual + z-score), rodando 100% no
+// dispositivo — sem chamadas de rede. Recebe o historico completo do pet
+// (mais antigo -> mais recente) e avalia a ultima leitura.
+function avaliarAnomalia(petNome, historico) {
+  if (historico.length < BASELINE_MINIMO + 1) return null;
+
+  const anteriores = historico.slice(0, -1);
+  const atual = historico[historico.length - 1];
+
+  const temps = anteriores.map((r) => r.sensors.temperature_celsius);
+  const atividades = anteriores.map((r) => r.sensors.activity_score);
+
+  const muTemp = media(temps);
+  const sigmaTemp = desvioPadrao(temps, muTemp);
+  const muAtividade = media(atividades);
+  const sigmaAtividade = desvioPadrao(atividades, muAtividade);
+
+  const zTemp = (atual.sensors.temperature_celsius - muTemp) / sigmaTemp;
+  const zAtividade = (atual.sensors.activity_score - muAtividade) / sigmaAtividade;
+
+  const signals = [];
+  let severidadeScore = 0;
+
+  if (zTemp > Z_SCORE_LIMITE) {
+    signals.push(
+      `Temperatura ${atual.sensors.temperature_celsius}°C acima da linha de base (${muTemp.toFixed(1)}°C ± ${sigmaTemp.toFixed(2)}), z-score=${zTemp.toFixed(2)}`
+    );
+    severidadeScore += zTemp > Z_SCORE_LIMITE * 1.5 ? 2 : 1;
+  }
+
+  if (zAtividade < -Z_SCORE_LIMITE) {
+    signals.push(
+      `Nível de atividade muito abaixo da linha de base (${muAtividade.toFixed(2)} ± ${sigmaAtividade.toFixed(2)}), z-score=${zAtividade.toFixed(2)}`
+    );
+    severidadeScore += zAtividade < -Z_SCORE_LIMITE * 1.5 ? 2 : 1;
+  }
+
+  if (signals.length === 0) return null;
+
+  let severity, recommendation;
+  if (severidadeScore >= 3) {
+    severity = "critica";
+    recommendation = "Agendar consulta veterinária com urgência (mesmo dia).";
+  } else if (severidadeScore === 2) {
+    severity = "media";
+    recommendation = "Observar o pet nas próximas horas e considerar agendar consulta.";
+  } else {
+    severity = "baixa";
+    recommendation = "Monitorar continuamente; nenhuma ação imediata necessária.";
+  }
+
+  return {
+    severity,
+    message: `Anomalia detectada para o pet '${petNome}'.`,
+    signals,
+    recommendation,
+  };
+}
+
+function emojiEspecie(especie) {
+  return { CAO: "🐕", GATO: "🐈", COELHO: "🐇", OUTRO: "🐾" }[especie] || "🐾";
+}
 
 export default function Monitoramento({ navigation }) {
   const { t } = useTheme();
 
-  const [leitura, SetLeitura]               = useState(null);
-  const [online, SetOnline]                 = useState(false);
-  const [atualizando, SetAtualizando]       = useState(false);
-  const [petSelecionado, SetPetSelecionado] = useState(null);
-  const [petsStorage, SetPetsStorage]       = useState([]);
-  const [logs, SetLogs]                     = useState([]);
-  const [modalLog, SetModalLog]             = useState(false);
-  const [mqttConectado, SetMqttConectado]   = useState(false);
-  const pollRef = useRef(null);
+  const { data: pets = [], isLoading: carregandoPets } = useAnimais();
 
-  useFocusEffect(
-    useCallback(() => { carregarPetsStorage(); }, [])
-  );
+  const [petSelecionadoId, SetPetSelecionadoId] = useState(null);
+  const [historicos, SetHistoricos]             = useState({});
+  const [atualizando, SetAtualizando]           = useState(false);
+  const [modalLog, SetModalLog]                 = useState(false);
 
-  useEffect(() => {
-    clearInterval(pollRef.current);
-    if (!mqttConectado || !petSelecionado) return;
-    buscarDados();
-    pollRef.current = setInterval(buscarDados, POLL_MS);
-    return () => clearInterval(pollRef.current);
-  }, [petSelecionado, mqttConectado]);
+  const petAtivo = pets.find((p) => p.id === petSelecionadoId) || pets[0] || null;
 
-  async function carregarPetsStorage() {
-    const dados = await AsyncStorage.getItem("PETS");
-    if (dados) {
-      const lista = JSON.parse(dados);
-      SetPetsStorage(lista);
-      if (lista.length > 0) SetPetSelecionado(lista[0].id);
-    }
+  // Popula um baseline inicial "saudavel" de leituras para o pet, para que
+  // o modelo tenha uma linha de base antes de aceitar novas leituras.
+  function seedarHistorico(pet) {
+    SetHistoricos((prev) => {
+      if (prev[pet.id]) return prev;
+      const base = Array.from({ length: BASELINE_MINIMO + 2 }, () => gerarLeitura(pet, false));
+      return { ...prev, [pet.id]: base };
+    });
   }
 
-  function toggleMqtt() {
-    if (mqttConectado) {
-      clearInterval(pollRef.current);
-      SetMqttConectado(false);
-      SetOnline(false);
-      SetLeitura(null);
-    } else {
-      SetMqttConectado(true);
-    }
+  function selecionarPet(pet) {
+    SetPetSelecionadoId(pet.id);
+    seedarHistorico(pet);
   }
 
-  async function buscarDados() {
-    try {
-      const res = await fetch(`${API_BASE}/api/latest/${petSelecionado}`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      if (!data.sensors) throw new Error();
-      SetOnline(true); SetLeitura(data);
-      adicionarLog(data.protocol || "MQTT", petSelecionado, data.sensors);
-    } catch { SetOnline(false); gerarFallback(); }
-  }
-
-  function gerarFallback() {
-    const base = {
-      rex:     { especie: "dog",    temp: 38.5, hr: 90,  steps: 60,  peso: 28.3 },
-      luna:    { especie: "cat",    temp: 38.3, hr: 150, steps: 40,  peso: 4.1  },
-
-    };
-    const p = base[petSelecionado] || base.rex;
-    const r = {
-      sensors: {
-        temperature_celsius: parseFloat((p.temp + (Math.random() - 0.5) * 0.6).toFixed(1)),
-        heart_rate_bpm:      Math.round(p.hr + (Math.random() - 0.5) * 18),
-        activity_score:      parseFloat((0.3 + Math.random() * 0.5).toFixed(2)),
-        steps_last_minute:   Math.round(p.steps + (Math.random() - 0.5) * 20),
-        weight_kg:           p.peso,
-      },
-      battery_pct: 95, health_score: parseFloat((78 + Math.random() * 18).toFixed(0)),
-      alerts: [], protocol: "LOCAL", species: p.especie,
-    };
-    SetLeitura(r);
-    adicionarLog("LOCAL", petSelecionado, r.sensors);
-  }
-
-  function adicionarLog(proto, pet, sensores) {
-    const ts = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    SetLogs((prev) => [{
-      id: Date.now().toString(), ts, proto, pet,
-      msg: `T:${sensores.temperature_celsius}°C  HR:${sensores.heart_rate_bpm}bpm  Steps:${sensores.steps_last_minute}`,
-    }, ...prev].slice(0, 20));
+  function novaLeitura() {
+    if (!petAtivo) return;
+    seedarHistorico(petAtivo);
+    SetHistoricos((prev) => {
+      const historicoPet = prev[petAtivo.id] || [];
+      const leitura = gerarLeitura(petAtivo);
+      const atualizado = [...historicoPet, leitura].slice(-HISTORICO_MAXIMO);
+      return { ...prev, [petAtivo.id]: atualizado };
+    });
   }
 
   async function aoAtualizar() {
     SetAtualizando(true);
-    await buscarDados();
+    novaLeitura();
+    await new Promise((resolve) => setTimeout(resolve, 400));
     SetAtualizando(false);
   }
 
@@ -120,46 +181,45 @@ export default function Monitoramento({ navigation }) {
     return                         { texto: "Normal",           cor: t.success, icone: "favorite" };
   }
 
-  const s       = leitura?.sensors;
-  const especie = leitura?.species || "dog";
-  const lim     = LIMITES[especie] || LIMITES.dog;
+  function estiloSeveridade(severidade) {
+    if (severidade === "critica") return { cor: t.danger,  icone: "warning",       label: "CRÍTICA" };
+    if (severidade === "media")   return { cor: t.warning, icone: "error-outline", label: "MÉDIA" };
+    return                              { cor: t.success, icone: "info-outline",  label: "BAIXA" };
+  }
 
-  const alertasSensor = leitura?.alerts || [];
+  const historicoAtual = petAtivo ? (historicos[petAtivo.id] || []) : [];
+  const leitura = historicoAtual[historicoAtual.length - 1] || null;
+  const s       = leitura?.sensors;
+  const lim     = LIMITES[petAtivo?.especie] || LIMITES.OUTRO;
+
+  const alertaIA = (petAtivo && historicoAtual.length > 0)
+    ? avaliarAnomalia(petAtivo.nome, historicoAtual)
+    : null;
 
   const stTemp = s ? statusTemperatura(s.temperature_celsius, lim) : null;
   const stHR   = s ? statusFrequencia(s.heart_rate_bpm, lim) : null;
 
-  const petsTabs = [
-    ...petsStorage.map((p) => ({ id: p.id, emoji: "🐾", label: p.nome })),
-  ];
-
+  // Garante que o pet ativo tenha baseline assim que a lista de pets chega
+  useEffect(() => {
+    if (petAtivo && !historicos[petAtivo.id]) {
+      seedarHistorico(petAtivo);
+    }
+  }, [petAtivo?.id, carregandoPets]);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <View style={styles.cabecalho}>
         <View>
           <Text style={[styles.titulo, { color: t.text }]}>Monitoramento</Text>
-          <Text style={[styles.subtitulo, { color: t.muted }]}>ESP32-S3 · Wokwi Simulated</Text>
-        </View>
-        <View style={[styles.badgeStatus, { backgroundColor: online ? t.successBg : t.warningBg }]}>
-          <MaterialIcons name={online ? "wifi" : "wifi-off"} size={14}
-            color={online ? t.success : t.warning} />
-          <Text style={[styles.badgeStatusTexto, { color: online ? t.success : t.warning }]}>
-            {online ? "Online" : "Offline"}
-          </Text>
+          <Text style={[styles.subtitulo, { color: t.muted }]}>Simulação local de sensores</Text>
         </View>
       </View>
 
-      {mqttConectado && !online && (
-        <View style={[styles.avisoOffline, { backgroundColor: t.warningBg }]}>
-          <MaterialIcons name="info-outline" size={16} color={t.warning} />
-          <Text style={[styles.avisoOfflineTexto, { color: t.warning }]}>
-            Servidor offline · execute petlink_server.py
-          </Text>
+      {carregandoPets ? (
+        <View style={styles.carregando}>
+          <ActivityIndicator size="large" color={t.primary} />
         </View>
-      )}
-
-      {petsStorage.length === 0 ? (
+      ) : pets.length === 0 ? (
         <View style={styles.semPets}>
           <FontAwesome5 name="paw" size={48} color={t.muted2} />
           <Text style={[styles.semPetsTitulo, { color: t.text }]}>Nenhum pet cadastrado</Text>
@@ -178,36 +238,25 @@ export default function Monitoramento({ navigation }) {
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}
             style={styles.petScroll} contentContainerStyle={styles.petScrollContent}>
-            {petsTabs.map((p) => (
-              <Chip key={p.id} label={p.emoji + " " + p.label} ativo={petSelecionado === p.id} onPress={() => SetPetSelecionado(p.id)} />
+            {pets.map((p) => (
+              <Chip key={p.id} label={emojiEspecie(p.especie) + " " + p.nome} ativo={petAtivo?.id === p.id} onPress={() => selecionarPet(p)} />
             ))}
           </ScrollView>
 
-          <TouchableOpacity
-            style={[styles.botaoMqtt, { backgroundColor: mqttConectado ? t.dangerBg : t.primaryBg, borderColor: mqttConectado ? t.danger : t.primary }]}
-            onPress={toggleMqtt}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons
-              name={mqttConectado ? "wifi-off" : "wifi"}
-              size={20}
-              color={mqttConectado ? t.danger : t.primary}
-            />
-            <Text style={[styles.botaoMqttTexto, { color: mqttConectado ? t.danger : t.primary }]}>
-              {mqttConectado ? "Desconectar MQTT" : "Conectar MQTT"}
-            </Text>
-            {mqttConectado && online && (
-              <View style={[styles.dotOnline, { backgroundColor: t.success }]} />
-            )}
-          </TouchableOpacity>
+          <Button
+            label="Gerar Nova Leitura"
+            onPress={novaLeitura}
+            icon={<MaterialIcons name="refresh" size={18} color="#fff" />}
+            style={{ marginHorizontal: 20, marginVertical: 10 }}
+          />
 
           <ScrollView showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.scroll, { paddingHorizontal: 20 }]}
             refreshControl={<RefreshControl refreshing={atualizando} onRefresh={aoAtualizar} colors={[t.primary]} />}>
 
-          {mqttConectado && s ? (
+          {s ? (
           <>
-            <Text style={[styles.secaoTitulo, { color: t.text }]}>Sensores em Tempo Real</Text>
+            <Text style={[styles.secaoTitulo, { color: t.text }]}>Sensores</Text>
 
             <View style={styles.gridSensores}>
               {[
@@ -217,7 +266,7 @@ export default function Monitoramento({ navigation }) {
                   st: { texto: s.activity_score > 0.1 ? "Ativo" : "Atividade baixa",
                         cor:   s.activity_score > 0.1 ? t.success : t.warning,
                         icone: s.activity_score > 0.1 ? "check-circle" : "warning" } },
-                { icone: "monitor-weight",cor: t.success, valor: s.weight_kg,            unidade: " kg", label: "Peso",
+                { icone: "monitor-weight",cor: t.success, valor: s.weight_kg ?? "—",     unidade: s.weight_kg != null ? " kg" : "", label: "Peso",
                   st: { texto: "Dentro do ideal", cor: t.success, icone: "check-circle" } },
               ].map((item) => (
                 <View key={item.label} style={[styles.cardSensor, styles.cardSensorMetade, { backgroundColor: t.surfaceCard }]}>
@@ -236,44 +285,58 @@ export default function Monitoramento({ navigation }) {
               ))}
             </View>
 
-
-            {alertasSensor.length > 0 && (
+            {alertaIA && (
               <>
-                <Text style={[styles.secaoTitulo, { color: t.text }]}>Alertas do Sensor</Text>
-                {alertasSensor.map((a, i) => (
-                  <View key={i} style={[styles.card, styles.cardAlertaUrgente, { backgroundColor: t.surfaceCard }]}>
-                    <View style={[styles.cardIcone, { backgroundColor: t.dangerBg }]}>
-                      <MaterialIcons name="warning" size={22} color={t.danger} />
+                <Text style={[styles.secaoTitulo, { color: t.text }]}>Alerta de IA · Modelo Preditivo</Text>
+                {(() => {
+                  const sev = estiloSeveridade(alertaIA.severity);
+                  return (
+                    <View style={[styles.cardAlertaIA, { backgroundColor: t.surfaceCard, borderLeftColor: sev.cor }]}>
+                      <View style={styles.cardAlertaIAHeader}>
+                        <MaterialIcons name={sev.icone} size={20} color={sev.cor} />
+                        <Text style={[styles.cardAlertaIASeveridade, { color: sev.cor }]}>{sev.label}</Text>
+                      </View>
+
+                      <Text style={[styles.cardAlertaIAMensagem, { color: t.text }]}>{alertaIA.message}</Text>
+
+                      {alertaIA.signals.map((sinal, i) => (
+                        <Text key={i} style={[styles.cardAlertaIASinal, { color: t.text2 }]}>• {sinal}</Text>
+                      ))}
+
+                      <View style={[styles.cardAlertaIARecomendacaoBox, { borderColor: sev.cor }]}>
+                        <Text style={[styles.cardAlertaIARecomendacao, { color: sev.cor }]}>
+                          {alertaIA.recommendation}
+                        </Text>
+                      </View>
+
+                      {alertaIA.severity !== "baixa" && (
+                        <Button
+                          label="Agendar Consulta"
+                          onPress={() => navigation.navigate("Consultas")}
+                          style={{ marginTop: 10, backgroundColor: sev.cor, borderColor: sev.cor }}
+                          icon={<MaterialIcons name="event" size={18} color="#fff" />}
+                        />
+                      )}
                     </View>
-                    <View style={styles.cardInfo}>
-                      <Text style={[styles.cardNome, { color: t.text }]}>{a.replace(/_/g, " ")}</Text>
-                      <Text style={[styles.cardDetalhe, { color: t.text2 }]}>Verificar com veterinário</Text>
-                    </View>
-                    <View style={[styles.badgePequeno, { backgroundColor: t.dangerBg }]}>
-                      <Text style={[styles.badgePequenoTexto, { color: t.danger }]}>Urgente</Text>
-                    </View>
-                  </View>
-                ))}
+                  );
+                })()}
               </>
             )}
           </>
-        ) : mqttConectado ? (
-          <View style={styles.carregando}>
-            <FontAwesome5 name="paw" size={40} color={t.muted2} />
-            <Text style={[styles.carregandoTexto, { color: t.muted2 }]}>Buscando dados do sensor...</Text>
-          </View>
-        ) : (
-          <View style={styles.carregando}>
-            <MaterialIcons name="wifi-off" size={40} color={t.muted2} />
-            <Text style={[styles.carregandoTexto, { color: t.muted2 }]}>
-              Toque em "Conectar MQTT" para iniciar o monitoramento.
-            </Text>
-          </View>
-        )}
+          ) : (
+            <View style={styles.carregando}>
+              <FontAwesome5 name="paw" size={40} color={t.muted2} />
+              <Text style={[styles.carregandoTexto, { color: t.muted2 }]}>Preparando leituras iniciais...</Text>
+            </View>
+          )}
 
-
-
-          <Button label={`Ver Log MQTT / HTTP${logs.length > 0 ? "  ("+logs.length+")" : ""}`} variant="outline" onPress={() => SetModalLog(true)} icon={<MaterialIcons name="terminal" size={18} color={t.btnOutlineText} />} style={{ marginTop: 8 }} />
+          <Button
+            label={`Ver Histórico${historicoAtual.length > 0 ? "  (" + historicoAtual.length + ")" : ""}`}
+            variant="outline"
+            onPress={() => SetModalLog(true)}
+            icon={<MaterialIcons name="history" size={18} color={t.btnOutlineText} />}
+            style={{ marginTop: 8 }}
+          />
           </ScrollView>
         </>
       )}
@@ -282,32 +345,42 @@ export default function Monitoramento({ navigation }) {
         <View style={[styles.modalFundo, { backgroundColor: t.modalFundo }]}>
           <View style={[styles.modalContainer, { backgroundColor: t.modalBg }]}>
             <View style={styles.modalCabecalho}>
-              <Text style={[styles.modalTitulo, { color: t.text }]}>Log MQTT / HTTP</Text>
+              <Text style={[styles.modalTitulo, { color: t.text }]}>Histórico de Leituras</Text>
               <TouchableOpacity onPress={() => SetModalLog(false)}>
                 <MaterialIcons name="close" size={24} color={t.text} />
               </TouchableOpacity>
             </View>
             <Text style={[styles.modalSubtitulo, { color: t.muted }]}>
-              Tópico: petlink/sensors/{petSelecionado}
+              Leituras simuladas localmente no dispositivo
             </Text>
-            {logs.length === 0 ? (
+            {historicoAtual.length === 0 ? (
               <View style={styles.logVazio}>
-                <MaterialIcons name="terminal" size={40} color={t.muted2} />
-                <Text style={[styles.logVazioTexto, { color: t.muted2 }]}>Nenhum dado recebido ainda</Text>
+                <MaterialIcons name="history" size={40} color={t.muted2} />
+                <Text style={[styles.logVazioTexto, { color: t.muted2 }]}>Nenhuma leitura ainda</Text>
               </View>
             ) : (
-              <FlatList data={logs} keyExtractor={(i) => i.id} style={{ maxHeight: 380 }}
+              <FlatList
+                data={[...historicoAtual].reverse()}
+                keyExtractor={(i) => i.id}
+                style={{ maxHeight: 380 }}
                 renderItem={({ item }) => (
                   <View style={[styles.logItem, { backgroundColor: t.bg2 }]}>
-                    <Text style={[styles.logTs, { color: t.muted }]}>{item.ts}</Text>
-                    <Text style={[styles.logProto, {
-                      color: item.proto === "MQTT" ? t.primary : item.proto === "LOCAL" ? t.warning : t.muted,
-                    }]}>{item.proto}</Text>
-                    <Text style={[styles.logMensagem, { color: t.text2 }]} numberOfLines={2}>{item.msg}</Text>
+                    <Text style={[styles.logTs, { color: t.muted }]}>
+                      {item.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    </Text>
+                    <Text style={[styles.logMensagem, { color: t.text2 }]} numberOfLines={2}>
+                      T:{item.sensors.temperature_celsius}°C  HR:{item.sensors.heart_rate_bpm}bpm  Steps:{item.sensors.steps_last_minute}
+                    </Text>
                   </View>
-                )} />
+                )}
+              />
             )}
-            <Button label="Limpar logs" variant="danger" onPress={() => { SetLogs([]); SetModalLog(false); }} style={{ marginTop: 16 }} />
+            <Button
+              label="Limpar histórico"
+              variant="danger"
+              onPress={() => { if (petAtivo) SetHistoricos((prev) => ({ ...prev, [petAtivo.id]: [] })); SetModalLog(false); }}
+              style={{ marginTop: 16 }}
+            />
           </View>
         </View>
       </Modal>
@@ -317,9 +390,6 @@ export default function Monitoramento({ navigation }) {
 
 const styles = StyleSheet.create({
   cabecalho: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
     marginBottom: 4,
@@ -332,31 +402,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  badgeStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  badgeStatusTexto: {
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  avisoOffline: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginHorizontal: 20,
-    marginTop: 8,
-    padding: 10,
-    borderRadius: 8,
-  },
-  avisoOfflineTexto: {
-    fontSize: 12,
-    flex: 1,
-  },
   petScroll: {
     marginTop: 12,
     marginBottom: 4,
@@ -365,24 +410,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 8,
   },
-  petChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  petChipEmoji: {
-    fontSize: 14,
-  },
-  petChipTexto: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
   scroll: {
-    paddingTop: 12,
+    paddingTop: 4,
     paddingBottom: 30,
   },
   secaoTitulo: {
@@ -432,53 +461,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "500",
   },
-  barraFundo: {
-    height: 6,
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  barraPreenchida: {
-    height: 6,
-    borderRadius: 3,
-  },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
+  cardAlertaIA: {
+    borderLeftWidth: 3,
     borderRadius: 12,
     padding: 14,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  cardAlertaUrgente: {
-    borderLeftWidth: 3,
-    borderLeftColor: "#e74c3c",
-  },
-  cardIcone: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    justifyContent: "center",
+  cardAlertaIAHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    marginRight: 12,
+    gap: 6,
+    marginBottom: 6,
   },
-  cardInfo: {
-    flex: 1,
-  },
-  cardNome: {
-    fontSize: 15,
+  cardAlertaIASeveridade: {
+    fontSize: 12,
     fontWeight: "bold",
-    marginBottom: 3,
+    letterSpacing: 0.5,
   },
-  cardDetalhe: {
+  cardAlertaIAMensagem: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  cardAlertaIASinal: {
+    fontSize: 12.5,
+    marginBottom: 2,
+    lineHeight: 17,
+  },
+  cardAlertaIARecomendacaoBox: {
+    borderLeftWidth: 3,
+    paddingLeft: 8,
+    marginTop: 8,
+  },
+  cardAlertaIARecomendacao: {
     fontSize: 13,
-  },
-  badgePequeno: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgePequenoTexto: {
-    fontSize: 11,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
   semPets: {
     flex: 1,
@@ -512,61 +529,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
   },
-  botaoMqtt: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginHorizontal: 20,
-    marginVertical: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-  },
-  botaoMqttTexto: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  dotOnline: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
   carregando: {
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 40,
     gap: 12,
+    flex: 1,
   },
   carregandoTexto: {
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
-  },
-  botaoLog: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  botaoLogTexto: {
-    fontWeight: "bold",
-    fontSize: 15,
-    flex: 1,
-  },
-  badgeLog: {
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  badgeLogTexto: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "bold",
   },
   modalFundo: {
     flex: 1,
@@ -609,22 +582,8 @@ const styles = StyleSheet.create({
   logTs: {
     fontSize: 10,
   },
-  logProto: {
-    fontSize: 11,
-    fontWeight: "bold",
-  },
   logMensagem: {
     fontSize: 12,
     marginTop: 2,
-  },
-  botaoLimparLog: {
-    marginTop: 16,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  botaoLimparLogTexto: {
-    fontWeight: "bold",
-    fontSize: 15,
   },
 });
