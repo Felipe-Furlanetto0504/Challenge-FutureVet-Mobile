@@ -15,8 +15,6 @@ const LIMITES = {
   OUTRO:  { temp: [37.5, 39.2], hr: [60,  120] },
 };
 
-// Perfil fisiologico base por especie, usado para simular leituras de
-// sensor a partir dos dados reais do pet (peso vem do cadastro do tutor).
 const BASE_POR_ESPECIE = {
   CAO:    { temp: 38.5, hr: 90,  steps: 60 },
   GATO:   { temp: 38.3, hr: 150, steps: 40 },
@@ -33,9 +31,6 @@ function desvioPadrao(valores, m) {
   return Math.sqrt(variancia) || 0.01;
 }
 
-// Gera uma leitura simulada de sensores para o pet. ~20% de chance de
-// simular um quadro de febre + queda de atividade, para permitir
-// demonstrar a deteccao de anomalia mesmo sem hardware conectado.
 function gerarLeitura(pet, forcarAnomalia = false) {
   const base = BASE_POR_ESPECIE[pet.especie] || BASE_POR_ESPECIE.OUTRO;
   const simularAnomalia = forcarAnomalia || Math.random() < 0.2;
@@ -61,9 +56,6 @@ function gerarLeitura(pet, forcarAnomalia = false) {
   };
 }
 
-// Modelo preditivo local (baseline individual + z-score), rodando 100% no
-// dispositivo — sem chamadas de rede. Recebe o historico completo do pet
-// (mais antigo -> mais recente) e avalia a ultima leitura.
 function avaliarAnomalia(petNome, historico) {
   if (historico.length < BASELINE_MINIMO + 1) return null;
 
@@ -136,8 +128,6 @@ export default function Monitoramento({ navigation }) {
 
   const petAtivo = pets.find((p) => p.id === petSelecionadoId) || pets[0] || null;
 
-  // Popula um baseline inicial "saudavel" de leituras para o pet, para que
-  // o modelo tenha uma linha de base antes de aceitar novas leituras.
   function seedarHistorico(pet) {
     SetHistoricos((prev) => {
       if (prev[pet.id]) return prev;
@@ -199,7 +189,6 @@ export default function Monitoramento({ navigation }) {
   const stTemp = s ? statusTemperatura(s.temperature_celsius, lim) : null;
   const stHR   = s ? statusFrequencia(s.heart_rate_bpm, lim) : null;
 
-  // Garante que o pet ativo tenha baseline assim que a lista de pets chega
   useEffect(() => {
     if (petAtivo && !historicos[petAtivo.id]) {
       seedarHistorico(petAtivo);

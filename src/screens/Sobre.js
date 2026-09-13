@@ -12,7 +12,7 @@ const INTEGRANTES = [
 
 const LINKS = {
   github: "https://github.com/Felipe-Furlanetto0504/Challenge-FutureVet-Mobile",
-  video:  "https://youtube.com/watch?v=SEU_VIDEO_ID",
+  video:  "https://youtu.be/wy1oHOzKFvE",
 };
 
 const TECNOLOGIAS = [
