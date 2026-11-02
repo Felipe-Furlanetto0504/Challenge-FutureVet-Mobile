@@ -1,16 +1,14 @@
-import { useState } from "react";
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 import { useSessao } from "../hooks/useAuth";
 import { useAnimais } from "../hooks/useAnimais";
 import { useVacinas } from "../hooks/useVacinas";
+import { useLeiturasColeira } from "../hooks/useLeiturasColeira";
+import { FONTE_LEITURAS } from "../services/coleira";
+import { emojiEspecie } from "../utils/especie";
 
-const IOT_API_BASE = "http://localhost:8080"; 
-
-function emojiEspecie(especie) {
-  return { CAO: "🐕", GATO: "🐈", COELHO: "🐇", OUTRO: "🐾" }[especie] || "🐾";
-}
+const ROTULO_SEVERIDADE = { critica: "crítica", media: "média", baixa: "baixa" };
 
 export default function Home({ navigation }) {
   const { t } = useTheme();
@@ -20,26 +18,14 @@ export default function Home({ navigation }) {
   const { data: pets = [], refetch: refetchPets, isRefetching: atualizandoPets } = useAnimais();
   const { data: vacinas = [], refetch: refetchVacinas, isRefetching: atualizandoVacinas } = useVacinas();
 
-  const [iot, SetIot] = useState(null);
-  const [iotOnline, SetIotOnline] = useState(false);
-  const [atualizandoIot, SetAtualizandoIot] = useState(false);
-
-  async function buscarIoT() {
-    try {
-      const res = await fetch(`${IOT_API_BASE}/api/latest/rex`, { signal: AbortSignal.timeout(3000) });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      if (!data.sensors) throw new Error();
-      SetIot(data); SetIotOnline(true);
-    } catch {
-      SetIotOnline(false); SetIot(null);
-    }
-  }
+ 
+  const petColeira = pets[0] || null;
+  const coleira = useLeiturasColeira(petColeira);
+  const s = coleira.ultima?.sensors;
+  const simulado = FONTE_LEITURAS === "simulador";
 
   async function aoAtualizar() {
-    SetAtualizandoIot(true);
-    await Promise.all([refetchPets(), refetchVacinas(), buscarIoT()]);
-    SetAtualizandoIot(false);
+    await Promise.all([refetchPets(), refetchVacinas(), coleira.novaLeitura()]);
   }
 
   const vacinasOrdenadas = [...vacinas]
@@ -61,10 +47,9 @@ export default function Home({ navigation }) {
   }
 
   const primeiroNome = usuario?.nome?.split(" ")[0] || "";
-  const s = iot?.sensors;
   const horaAtual = new Date().getHours();
   const saudacao = horaAtual < 12 ? "Bom dia" : horaAtual < 18 ? "Boa tarde" : "Boa noite";
-  const atualizando = atualizandoPets || atualizandoVacinas || atualizandoIot;
+  const atualizando = atualizandoPets || atualizandoVacinas || coleira.gerandoLeitura;
 
   return (
     <ScrollView
@@ -93,7 +78,7 @@ export default function Home({ navigation }) {
           {[
             { val: pets.length, label: "Pets", cor: t.primary, icone: "paw", lib: "fa5" },
             { val: vacinas.length, label: "Vacinas", cor: t.success, icone: "vaccines", lib: "material" },
-            { val: iot ? Math.round(iot.health_score) : "—", label: "Saúde", cor: t.warning, icone: "favorite", lib: "material" },
+            { val: s ? (coleira.alerta ? "Alerta" : "OK") : "—", label: "Saúde", cor: t.warning, icone: "favorite", lib: "material" },
           ].map((item, i, arr) => (
             <View key={item.label} style={[strip.item, i < arr.length - 1 && { borderRightWidth: 1, borderRightColor: t.border }]}>
               {item.lib === "fa5"
@@ -110,7 +95,7 @@ export default function Home({ navigation }) {
           {[
             { icone: "vaccines", lib: "material", cor: "#fff", bg: t.primary, label: "Vacinas", sub: `${vacinas.length} registros`, tela: "Vacinas", destaque: true },
             { icone: "stethoscope", lib: "fa5", cor: "#fff", bg: t.success, label: "Consultas", sub: "Agendar", tela: "Consultas", destaque: true },
-            { icone: "sensors", lib: "material", cor: t.warning, bg: t.warningBg, label: "Monitor", sub: iotOnline ? "Online" : "Offline", tela: "Monitoramento", destaque: false },
+            { icone: "sensors", lib: "material", cor: t.warning, bg: t.warningBg, label: "Monitor", sub: simulado ? "Simulado" : "Online", tela: "Monitoramento", destaque: false },
             { icone: "paw", lib: "fa5", cor: t.primary, bg: t.primaryBg, label: "Perfil", sub: `${pets.length} pets`, tela: "Perfil", destaque: false },
           ].map((a) => (
             <TouchableOpacity key={a.label} activeOpacity={0.8}
@@ -147,12 +132,12 @@ export default function Home({ navigation }) {
               <View style={[iot_card.petIcone, { backgroundColor: t.primaryBg }]}>
                 <FontAwesome5 name="paw" size={13} color={t.primary} />
               </View>
-              <Text style={[iot_card.petNome, { color: t.text }]}>Rex</Text>
+              <Text style={[iot_card.petNome, { color: t.text }]}>{petColeira?.nome || "Coleira"}</Text>
             </View>
-            <View style={[iot_card.badge, { backgroundColor: iotOnline ? t.successBg : t.warningBg }]}>
-              <View style={[iot_card.dot, { backgroundColor: iotOnline ? t.success : t.warning }]} />
-              <Text style={[iot_card.badgeTexto, { color: iotOnline ? t.success : t.warning }]}>
-                {iotOnline ? "Online" : "Offline"}
+            <View style={[iot_card.badge, { backgroundColor: simulado ? t.primaryBg : t.successBg }]}>
+              <View style={[iot_card.dot, { backgroundColor: simulado ? t.primary : t.success }]} />
+              <Text style={[iot_card.badgeTexto, { color: simulado ? t.primary : t.success }]}>
+                {simulado ? "Simulado" : "Online"}
               </Text>
             </View>
           </View>
@@ -175,26 +160,18 @@ export default function Home({ navigation }) {
             <View style={iot_card.vazio}>
               <MaterialIcons name="wifi-off" size={20} color={t.muted2} />
               <Text style={[iot_card.vazioTexto, { color: t.muted2 }]}>
-                Inicie o petlink_server.py para ver os dados
+                Cadastre um pet no Perfil para ver a coleira
               </Text>
             </View>
           )}
 
           <View style={[iot_card.rodape, { borderTopColor: t.border }]}>
             <View style={iot_card.scoreRow}>
-              <Text style={[iot_card.scoreLabel, { color: t.muted }]}>Score de saúde</Text>
-              <Text style={[iot_card.scoreVal, { color: t.text }]}>
-                {iot ? `${Math.round(iot.health_score)}/100` : "—"}
+              <Text style={[iot_card.scoreLabel, { color: t.muted }]}>Modelo preditivo</Text>
+              <Text style={[iot_card.scoreVal, { color: coleira.alerta ? t.danger : t.text }]}>
+                {!s ? "—" : coleira.alerta ? `Anomalia ${ROTULO_SEVERIDADE[coleira.alerta.severity]}` : "Sem anomalias"}
               </Text>
             </View>
-            {iot && (
-              <View style={[iot_card.barFundo, { backgroundColor: t.border }]}>
-                <View style={[iot_card.barPreenchida, {
-                  width: `${iot.health_score}%`,
-                  backgroundColor: iot.health_score >= 80 ? t.success : iot.health_score >= 50 ? t.warning : t.danger,
-                }]} />
-              </View>
-            )}
           </View>
         </TouchableOpacity>
 
