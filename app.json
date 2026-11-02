@@ -26,6 +26,21 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4A90E2"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "029855ae-e499-4961-bc56-ac8d03ef09ea"
+      }
+    },
+    "owner": "felipefurlanetto"
   }
 }
