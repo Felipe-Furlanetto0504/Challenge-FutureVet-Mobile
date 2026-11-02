@@ -1,120 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal, RefreshControl, ActivityIndicator } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme, Button, Chip } from "../theme";
 import { useAnimais } from "../hooks/useAnimais";
-
-const HISTORICO_MAXIMO = 30;
-const BASELINE_MINIMO = 8;
-const Z_SCORE_LIMITE = 2.0;
-
-const LIMITES = {
-  CAO:    { temp: [37.5, 39.2], hr: [60,  120] },
-  GATO:   { temp: [38.0, 39.5], hr: [120, 220] },
-  COELHO: { temp: [38.5, 40.0], hr: [140, 300] },
-  OUTRO:  { temp: [37.5, 39.2], hr: [60,  120] },
-};
-
-const BASE_POR_ESPECIE = {
-  CAO:    { temp: 38.5, hr: 90,  steps: 60 },
-  GATO:   { temp: 38.3, hr: 150, steps: 40 },
-  COELHO: { temp: 38.9, hr: 220, steps: 50 },
-  OUTRO:  { temp: 38.5, hr: 90,  steps: 60 },
-};
-
-function media(valores) {
-  return valores.reduce((soma, v) => soma + v, 0) / valores.length;
-}
-
-function desvioPadrao(valores, m) {
-  const variancia = valores.reduce((soma, v) => soma + (v - m) ** 2, 0) / valores.length;
-  return Math.sqrt(variancia) || 0.01;
-}
-
-function gerarLeitura(pet, forcarAnomalia = false) {
-  const base = BASE_POR_ESPECIE[pet.especie] || BASE_POR_ESPECIE.OUTRO;
-  const simularAnomalia = forcarAnomalia || Math.random() < 0.2;
-
-  const temperature_celsius = parseFloat(
-    (simularAnomalia ? base.temp + 1.3 + Math.random() * 0.4 : base.temp + (Math.random() - 0.5) * 0.6).toFixed(1)
-  );
-  const activity_score = parseFloat(
-    (simularAnomalia ? 0.03 + Math.random() * 0.05 : 0.3 + Math.random() * 0.5).toFixed(2)
-  );
-
-  return {
-    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
-    timestamp: new Date(),
-    species: pet.especie,
-    sensors: {
-      temperature_celsius,
-      heart_rate_bpm:    Math.round(base.hr + (Math.random() - 0.5) * 18),
-      activity_score,
-      steps_last_minute: Math.round(base.steps + (Math.random() - 0.5) * 20),
-      weight_kg:         pet.peso ?? null,
-    },
-  };
-}
-
-function avaliarAnomalia(petNome, historico) {
-  if (historico.length < BASELINE_MINIMO + 1) return null;
-
-  const anteriores = historico.slice(0, -1);
-  const atual = historico[historico.length - 1];
-
-  const temps = anteriores.map((r) => r.sensors.temperature_celsius);
-  const atividades = anteriores.map((r) => r.sensors.activity_score);
-
-  const muTemp = media(temps);
-  const sigmaTemp = desvioPadrao(temps, muTemp);
-  const muAtividade = media(atividades);
-  const sigmaAtividade = desvioPadrao(atividades, muAtividade);
-
-  const zTemp = (atual.sensors.temperature_celsius - muTemp) / sigmaTemp;
-  const zAtividade = (atual.sensors.activity_score - muAtividade) / sigmaAtividade;
-
-  const signals = [];
-  let severidadeScore = 0;
-
-  if (zTemp > Z_SCORE_LIMITE) {
-    signals.push(
-      `Temperatura ${atual.sensors.temperature_celsius}°C acima da linha de base (${muTemp.toFixed(1)}°C ± ${sigmaTemp.toFixed(2)}), z-score=${zTemp.toFixed(2)}`
-    );
-    severidadeScore += zTemp > Z_SCORE_LIMITE * 1.5 ? 2 : 1;
-  }
-
-  if (zAtividade < -Z_SCORE_LIMITE) {
-    signals.push(
-      `Nível de atividade muito abaixo da linha de base (${muAtividade.toFixed(2)} ± ${sigmaAtividade.toFixed(2)}), z-score=${zAtividade.toFixed(2)}`
-    );
-    severidadeScore += zAtividade < -Z_SCORE_LIMITE * 1.5 ? 2 : 1;
-  }
-
-  if (signals.length === 0) return null;
-
-  let severity, recommendation;
-  if (severidadeScore >= 3) {
-    severity = "critica";
-    recommendation = "Agendar consulta veterinária com urgência (mesmo dia).";
-  } else if (severidadeScore === 2) {
-    severity = "media";
-    recommendation = "Observar o pet nas próximas horas e considerar agendar consulta.";
-  } else {
-    severity = "baixa";
-    recommendation = "Monitorar continuamente; nenhuma ação imediata necessária.";
-  }
-
-  return {
-    severity,
-    message: `Anomalia detectada para o pet '${petNome}'.`,
-    signals,
-    recommendation,
-  };
-}
-
-function emojiEspecie(especie) {
-  return { CAO: "🐕", GATO: "🐈", COELHO: "🐇", OUTRO: "🐾" }[especie] || "🐾";
-}
+import { useLeiturasColeira } from "../hooks/useLeiturasColeira";
+import { limitesDaEspecie, nivelTemperatura, nivelFrequencia } from "../services/anomalias";
+import { emojiEspecie } from "../utils/especie";
 
 export default function Monitoramento({ navigation }) {
   const { t } = useTheme();
@@ -122,53 +13,36 @@ export default function Monitoramento({ navigation }) {
   const { data: pets = [], isLoading: carregandoPets } = useAnimais();
 
   const [petSelecionadoId, SetPetSelecionadoId] = useState(null);
-  const [historicos, SetHistoricos]             = useState({});
   const [atualizando, SetAtualizando]           = useState(false);
   const [modalLog, SetModalLog]                 = useState(false);
 
   const petAtivo = pets.find((p) => p.id === petSelecionadoId) || pets[0] || null;
-
-  function seedarHistorico(pet) {
-    SetHistoricos((prev) => {
-      if (prev[pet.id]) return prev;
-      const base = Array.from({ length: BASELINE_MINIMO + 2 }, () => gerarLeitura(pet, false));
-      return { ...prev, [pet.id]: base };
-    });
-  }
+  const { historico: historicoAtual, ultima: leitura, alerta: alertaIA, novaLeitura, limpar } =
+    useLeiturasColeira(petAtivo);
 
   function selecionarPet(pet) {
     SetPetSelecionadoId(pet.id);
-    seedarHistorico(pet);
-  }
-
-  function novaLeitura() {
-    if (!petAtivo) return;
-    seedarHistorico(petAtivo);
-    SetHistoricos((prev) => {
-      const historicoPet = prev[petAtivo.id] || [];
-      const leitura = gerarLeitura(petAtivo);
-      const atualizado = [...historicoPet, leitura].slice(-HISTORICO_MAXIMO);
-      return { ...prev, [petAtivo.id]: atualizado };
-    });
   }
 
   async function aoAtualizar() {
     SetAtualizando(true);
-    novaLeitura();
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    await novaLeitura();
     SetAtualizando(false);
   }
 
+
   function statusTemperatura(temp, limites) {
-    if (temp > limites.temp[1]) return { texto: "Febre detectada", cor: t.danger,  icone: "thermostat"  };
-    if (temp < limites.temp[0]) return { texto: "Hipotermia leve", cor: t.warning, icone: "ac-unit"     };
-    return                             { texto: "Normal",           cor: t.success, icone: "check-circle" };
+    const nivel = nivelTemperatura(temp, limites);
+    if (nivel === "alto")  return { texto: "Febre detectada", cor: t.danger,  icone: "thermostat"  };
+    if (nivel === "baixo") return { texto: "Hipotermia leve", cor: t.warning, icone: "ac-unit"     };
+    return                        { texto: "Normal",           cor: t.success, icone: "check-circle" };
   }
 
   function statusFrequencia(hr, limites) {
-    if (hr > limites.hr[1]) return { texto: "Acima do normal", cor: t.danger,  icone: "favorite" };
-    if (hr < limites.hr[0]) return { texto: "Abaixo do normal",cor: t.danger,  icone: "favorite" };
-    return                         { texto: "Normal",           cor: t.success, icone: "favorite" };
+    const nivel = nivelFrequencia(hr, limites);
+    if (nivel === "alto")  return { texto: "Acima do normal", cor: t.danger,  icone: "favorite" };
+    if (nivel === "baixo") return { texto: "Abaixo do normal",cor: t.danger,  icone: "favorite" };
+    return                        { texto: "Normal",           cor: t.success, icone: "favorite" };
   }
 
   function estiloSeveridade(severidade) {
@@ -177,23 +51,11 @@ export default function Monitoramento({ navigation }) {
     return                              { cor: t.success, icone: "info-outline",  label: "BAIXA" };
   }
 
-  const historicoAtual = petAtivo ? (historicos[petAtivo.id] || []) : [];
-  const leitura = historicoAtual[historicoAtual.length - 1] || null;
-  const s       = leitura?.sensors;
-  const lim     = LIMITES[petAtivo?.especie] || LIMITES.OUTRO;
-
-  const alertaIA = (petAtivo && historicoAtual.length > 0)
-    ? avaliarAnomalia(petAtivo.nome, historicoAtual)
-    : null;
+  const s   = leitura?.sensors;
+  const lim = limitesDaEspecie(petAtivo?.especie);
 
   const stTemp = s ? statusTemperatura(s.temperature_celsius, lim) : null;
   const stHR   = s ? statusFrequencia(s.heart_rate_bpm, lim) : null;
-
-  useEffect(() => {
-    if (petAtivo && !historicos[petAtivo.id]) {
-      seedarHistorico(petAtivo);
-    }
-  }, [petAtivo?.id, carregandoPets]);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -367,7 +229,7 @@ export default function Monitoramento({ navigation }) {
             <Button
               label="Limpar histórico"
               variant="danger"
-              onPress={() => { if (petAtivo) SetHistoricos((prev) => ({ ...prev, [petAtivo.id]: [] })); SetModalLog(false); }}
+              onPress={() => { limpar(); SetModalLog(false); }}
               style={{ marginTop: 16 }}
             />
           </View>
