@@ -16,9 +16,11 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "br.com.fiap.futurevet",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#4A90E2"
       },
       "edgeToEdgeEnabled": true
     },
