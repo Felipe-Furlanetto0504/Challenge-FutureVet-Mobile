@@ -16,10 +16,18 @@ export function useCriarAnimal() {
   });
 }
 
+export function useAtualizarAnimal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, form }) => apiFetch(`/api/animais/${id}`, { method: "PUT", body: form }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["animais"] }),
+  });
+}
+
 export function useExcluirAnimal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => apiFetch(`/api/animais/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["animais"] }),
   });
-}
+}
