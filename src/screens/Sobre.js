@@ -1,5 +1,6 @@
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from "react-native";
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert, Platform } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import Constants from "expo-constants";
 import { useTheme } from "../theme";
 
 const INTEGRANTES = [
@@ -14,6 +15,10 @@ const LINKS = {
   github: "https://github.com/Felipe-Furlanetto0504/Challenge-FutureVet-Mobile",
   video:  "https://youtu.be/wy1oHOzKFvE",
 };
+
+// Preenchidos no build pelo app.config.js
+const VERSAO = Constants.expoConfig?.version ?? "-";
+const COMMIT = Constants.expoConfig?.extra?.commitHash ?? "-";
 
 const TECNOLOGIAS = [
   { icone: "phone-android",  cor: "#4A90E2", nome: "React Native",  detalhe: "Interface mobile multiplataforma"   },
@@ -49,12 +54,25 @@ export default function Sobre() {
         <View style={[styles.cabecalhoIcone, { backgroundColor: t.primaryBg }]}>
           <FontAwesome5 name="paw" size={32} color={t.primary} />
         </View>
-        <Text style={[styles.cabecalhoNome, { color: t.text }]}>PetLink</Text>
-        <Text style={[styles.cabecalhoVersao, { color: t.muted }]}>v1.0.0 · FIAP 2026</Text>
+        <Text style={[styles.cabecalhoNome, { color: t.text }]}>FutureVet</Text>
+        <Text style={[styles.cabecalhoVersao, { color: t.muted }]}>v{VERSAO} · FIAP 2026</Text>
         <Text style={[styles.cabecalhoDescricao, { color: t.text2 }]}>
           Monitoramento inteligente da saúde dos seus pets via IoT, com sensores
           conectados em tempo real e gestão completa de vacinas e consultas.
         </Text>
+      </View>
+
+      <Text style={[styles.secaoTitulo, { color: t.text }]}>Versão publicada</Text>
+      <View style={[styles.card, { backgroundColor: t.surfaceCard }]}>
+        <View style={[styles.cardIcone, { backgroundColor: t.primaryBg }]}>
+          <MaterialIcons name="tag" size={22} color={t.primary} />
+        </View>
+        <View style={styles.cardInfo}>
+          <Text style={[styles.cardNome, { color: t.text }]}>Versão {VERSAO}</Text>
+          <Text style={[styles.cardDetalhe, { color: t.text2 }]}>
+            Commit <Text style={[styles.commitHash, { color: t.primary }]}>{COMMIT}</Text>
+          </Text>
+        </View>
       </View>
 
       <Text style={[styles.secaoTitulo, { color: t.text }]}>O Problema</Text>
@@ -136,7 +154,7 @@ export default function Sobre() {
       <View style={[styles.rodape, { borderTopColor: t.divisor }]}>
         <FontAwesome5 name="paw" size={14} color={t.muted2} />
         <Text style={[styles.rodapeTexto, { color: t.muted2 }]}>
-          FIAP · Disruptive Architectures: IoT, IoB & Generative IA · 3º Sprint 2026
+          FIAP · Disruptive Architectures: IoT, IoB & Generative IA · Mobile Application Development · 4ª Sprint 2026
         </Text>
       </View>
     </ScrollView>
@@ -170,6 +188,10 @@ const styles = StyleSheet.create({
   cabecalhoVersao: {
     fontSize: 12,
     marginBottom: 14,
+  },
+  commitHash: {
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontWeight: "bold",
   },
   cabecalhoDescricao: {
     fontSize: 14,
@@ -262,4 +284,4 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 16,
   },
-});
+});
