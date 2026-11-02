@@ -9,22 +9,8 @@ import {
   useConsultas, useAgendarConsulta, useReagendarConsulta,
   useConfirmarConsulta, useCancelarConsulta, useConcluirConsulta,
 } from "../hooks/useConsultas";
-
-function paraIso(dataBr) {
-  if (!dataBr || dataBr.length !== 10) return null;
-  const [d, m, a] = dataBr.split("/");
-  return `${a}-${m}-${d}`;
-}
-
-function paraBr(dataIso) {
-  if (!dataIso) return "";
-  const [a, m, d] = dataIso.split("-");
-  return { dia: d, mes: m, completa: `${d}/${m}/${a}` };
-}
-
-function emojiEspecie(especie) {
-  return { CAO: "🐕", GATO: "🐈", COELHO: "🐇", OUTRO: "🐾" }[especie] || "🐾";
-}
+import { paraIso, paraBr, partesData } from "../utils/datas";
+import { emojiEspecie } from "../utils/especie";
 
 export default function Consultas() {
   const { t } = useTheme();
@@ -60,11 +46,10 @@ export default function Consultas() {
   }
 
   function abrirEdicao(item) {
-    const d = item.data.split("-");
     SetEditandoId(item.id);
     SetAnimalId(item.animalId);
     SetTipo(item.tipo);
-    SetData(`${d[2]}/${d[1]}/${d[0]}`);
+    SetData(paraBr(item.data));
     SetHora(item.hora ? item.hora.slice(0, 5) : "");
     SetLocal(item.local || "");
     SetObservacao(item.observacao || "");
@@ -116,7 +101,7 @@ export default function Consultas() {
 
   function renderConsulta({ item }) {
     const pet = pets.find((p) => p.id === item.animalId);
-    const d = paraBr(item.data);
+    const d = partesData(item.data);
     const ativa = item.status === "AGENDADA" || item.status === "CONFIRMADA";
 
     return (
@@ -397,4 +382,4 @@ const styles = (t) => ({
   botaoCancelarTexto: { color: t.danger, fontWeight: "bold", fontSize: 15 },
   botaoSalvar: { flex: 1, backgroundColor: t.primary, paddingVertical: 14, borderRadius: 8, alignItems: "center" },
   botaoSalvarTexto: { color: "#fff", fontWeight: "bold", fontSize: 15 },
-});
+});

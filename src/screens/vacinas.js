@@ -5,22 +5,8 @@ import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 import { useAnimais } from "../hooks/useAnimais";
 import { useVacinas, useCriarVacina, useAtualizarVacina, useExcluirVacina } from "../hooks/useVacinas";
-
-function paraIso(dataBr) {
-  if (!dataBr || dataBr.length !== 10) return null;
-  const [d, m, a] = dataBr.split("/");
-  return `${a}-${m}-${d}`;
-}
-
-function paraBr(dataIso) {
-  if (!dataIso) return "";
-  const [a, m, d] = dataIso.split("-");
-  return `${d}/${m}/${a}`;
-}
-
-function emojiEspecie(especie) {
-  return { CAO: "🐕", GATO: "🐈", COELHO: "🐇", OUTRO: "🐾" }[especie] || "🐾";
-}
+import { paraIso, paraBr } from "../utils/datas";
+import { emojiEspecie } from "../utils/especie";
 
 export default function Vacinas() {
   const { t } = useTheme();
@@ -267,4 +253,4 @@ const styles = (t) => ({
   botaoTexto: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   botaoCancelar: { marginTop: 10, paddingVertical: 14, borderRadius: 8, alignItems: "center" },
   botaoCancelarTexto: { color: t.danger, fontWeight: "bold", fontSize: 16 },
-});
+});

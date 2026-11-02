@@ -3,8 +3,9 @@ import { Text, View, StyleSheet, TouchableOpacity, Alert, ScrollView, Modal, Tex
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 import { useSessao, useLogout } from "../hooks/useAuth";
-import { useAnimais, useCriarAnimal, useExcluirAnimal } from "../hooks/useAnimais";
+import { useAnimais, useCriarAnimal, useAtualizarAnimal, useExcluirAnimal } from "../hooks/useAnimais";
 import { useVacinas } from "../hooks/useVacinas";
+import { emojiEspecie } from "../utils/especie";
 
 const ESPECIES = [
   { valor: "CAO", label: "🐕 Cão" },
@@ -19,10 +20,6 @@ const PORTES = [
   { valor: "GRANDE", label: "Grande" },
 ];
 
-function emojiEspecie(especie) {
-  return { CAO: "🐕", GATO: "🐈", COELHO: "🐇", OUTRO: "🐾" }[especie] || "🐾";
-}
-
 export default function Perfil() {
   const { t, dark, toggleTheme } = useTheme();
   const { data: sessao } = useSessao();
@@ -31,10 +28,12 @@ export default function Perfil() {
   const { data: pets = [], isLoading: carregandoPets } = useAnimais();
   const { data: vacinas = [] } = useVacinas();
   const criarAnimal = useCriarAnimal();
+  const atualizarAnimal = useAtualizarAnimal();
   const excluirAnimal = useExcluirAnimal();
   const logout = useLogout();
 
   const [modalPet, SetModalPet] = useState(false);
+  const [editandoPetId, SetEditandoPetId] = useState(null);
   const [nomePet, SetNomePet] = useState("");
   const [idadePet, SetIdadePet] = useState("");
   const [portePet, SetPortePet] = useState("PEQUENO");
@@ -50,8 +49,20 @@ export default function Perfil() {
   }
 
   function abrirModalPet() {
+    SetEditandoPetId(null);
     SetNomePet(""); SetIdadePet(""); SetPortePet("PEQUENO");
     SetPesoPet(""); SetEspeciePet("CAO"); SetRacaPet("");
+    SetModalPet(true);
+  }
+
+  function abrirEdicaoPet(pet) {
+    SetEditandoPetId(pet.id);
+    SetNomePet(pet.nome || "");
+    SetIdadePet(pet.idade || "");
+    SetPortePet(pet.porte || "PEQUENO");
+    SetPesoPet(pet.peso != null ? String(pet.peso) : "");
+    SetEspeciePet(pet.especie || "CAO");
+    SetRacaPet(pet.raca || "");
     SetModalPet(true);
   }
 
@@ -63,20 +74,24 @@ export default function Perfil() {
     if (isNaN(pesoNumero) || pesoNumero <= 0 || pesoNumero > 999.99) {
       Alert.alert("Erro", "Digite um peso válido (até 999,99 kg)."); return;
     }
-    criarAnimal.mutate(
-      {
-        nome: nomePet.trim(),
-        especie: especiePet,
-        raca: racaPet.trim() || null,
-        idade: idadePet.trim(),
-        porte: portePet,
-        peso: pesoNumero,
-      },
-      {
-        onSuccess: () => SetModalPet(false),
-        onError: (erro) => Alert.alert("Erro", erro.message || "Não foi possível salvar o pet."),
-      }
-    );
+    const form = {
+      nome: nomePet.trim(),
+      especie: especiePet,
+      raca: racaPet.trim() || null,
+      idade: idadePet.trim(),
+      porte: portePet,
+      peso: pesoNumero,
+    };
+    const callbacks = {
+      onSuccess: () => SetModalPet(false),
+      onError: (erro) => Alert.alert("Erro", erro.message || "Não foi possível salvar o pet."),
+    };
+
+    if (editandoPetId) {
+      atualizarAnimal.mutate({ id: editandoPetId, form }, callbacks);
+    } else {
+      criarAnimal.mutate(form, callbacks);
+    }
   }
 
   function excluirPet(id) {
@@ -213,9 +228,14 @@ export default function Perfil() {
                   )}
                 </View>
               </View>
-              <TouchableOpacity onPress={() => excluirPet(pet.id)}>
-                <MaterialIcons name="delete-outline" size={24} color={t.danger} />
-              </TouchableOpacity>
+              <View style={{ gap: 14 }}>
+                <TouchableOpacity onPress={() => abrirEdicaoPet(pet)} accessibilityLabel={`Editar ${pet.nome}`}>
+                  <MaterialIcons name="edit" size={22} color={t.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => excluirPet(pet.id)} accessibilityLabel={`Excluir ${pet.nome}`}>
+                  <MaterialIcons name="delete-outline" size={24} color={t.danger} />
+                </TouchableOpacity>
+              </View>
             </View>
           );
         })
@@ -234,7 +254,7 @@ export default function Perfil() {
         <View style={[styles.modalFundo, { backgroundColor: t.modalFundo }]}>
           <View style={[styles.modalCaixa, { backgroundColor: t.modalBg }]}>
             <ScrollView contentContainerStyle={styles.modalConteudo}>
-              <Text style={[styles.modalTitulo, { color: t.text }]}>Novo Pet</Text>
+              <Text style={[styles.modalTitulo, { color: t.text }]}>{editandoPetId ? "Editar Pet" : "Novo Pet"}</Text>
 
               <Text style={[styles.inputLabel, { color: t.text }]}>Nome do Pet</Text>
               <TextInput value={nomePet} onChangeText={SetNomePet}
@@ -286,8 +306,8 @@ export default function Perfil() {
                 style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 placeholder="Ex: 5.5" placeholderTextColor={t.placeholder} keyboardType="numeric" />
 
-              <TouchableOpacity style={[styles.botaoSalvar, { backgroundColor: t.primary }]} onPress={salvarPet} disabled={criarAnimal.isPending}>
-                {criarAnimal.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.botaoSalvarTexto}>Salvar</Text>}
+              <TouchableOpacity style={[styles.botaoSalvar, { backgroundColor: t.primary }]} onPress={salvarPet} disabled={criarAnimal.isPending || atualizarAnimal.isPending}>
+                {(criarAnimal.isPending || atualizarAnimal.isPending) ? <ActivityIndicator color="#fff" /> : <Text style={styles.botaoSalvarTexto}>Salvar</Text>}
               </TouchableOpacity>
               <TouchableOpacity style={styles.botaoCancelar} onPress={() => SetModalPet(false)}>
                 <Text style={[styles.botaoCancelarTexto, { color: t.danger }]}>Cancelar</Text>
