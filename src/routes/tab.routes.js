@@ -9,11 +9,14 @@ import Consultas from "../screens/Consultas";
 import Sobre from "../screens/Sobre";
 import Monitoramento from "../screens/Monitoramento";
 import { useTheme } from "../theme";
+import { useNotificacoes } from "../hooks/useNotificacoes";
 
 const Tab = createBottomTabNavigator();
 
 export default function TabRoutes() {
   const { t } = useTheme();
+
+  useNotificacoes();
 
   return (
     <Tab.Navigator
