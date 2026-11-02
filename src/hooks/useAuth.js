@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, salvarSessao, limparSessao, lerSessao } from "../services/Api";
+import { limparNotificacoes } from "../services/notificacoes";
 
 export function useSessao() {
   return useQuery({
@@ -31,10 +32,13 @@ export function useRegistro() {
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: limparSessao,
+    mutationFn: async () => {
+      await limparNotificacoes().catch(() => {});
+      await limparSessao();
+    },
     onSuccess: () => {
       queryClient.setQueryData(["sessao"], { token: null, usuario: null });
       queryClient.clear();
     },
   });
-}
+}
