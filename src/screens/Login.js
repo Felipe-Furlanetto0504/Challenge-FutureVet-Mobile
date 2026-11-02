@@ -3,6 +3,7 @@ import { Text, View, StyleSheet, Alert, TextInput, TouchableOpacity, Image, Acti
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 import { useLogin } from "../hooks/useAuth";
+import { useDemora } from "../hooks/useDemora";
 
 export default function Login({ navigation }) {
   const { t } = useTheme();
@@ -10,6 +11,7 @@ export default function Login({ navigation }) {
   const [senha, SetSenha] = useState("");
   const [mostrarSenha, SetMostrarSenha] = useState(false);
   const login = useLogin();
+  const demorou = useDemora(login.isPending);
 
   function logar() {
     if (!email || !senha) { Alert.alert("Erro", "Preencha todos os campos"); return; }
@@ -75,6 +77,12 @@ export default function Login({ navigation }) {
           {login.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.botaoTexto}>Entrar</Text>}
         </TouchableOpacity>
 
+        {demorou && (
+          <Text style={s.avisoServidor}>
+            Conectando ao servidor. Na primeira vez do dia isso pode levar até 1 minuto.
+          </Text>
+        )}
+
         <TouchableOpacity onPress={() => navigation.navigate("Cadastro")} style={s.linkWrap}>
           <Text style={s.linkTexto}>
             Não tem conta? <Text style={s.linkDestaque}>Criar conta</Text>
@@ -101,7 +109,8 @@ const styles = (t) => StyleSheet.create({
   olho: { paddingHorizontal: 12 },
   botao: { marginTop: 8, backgroundColor: t.primary, paddingVertical: 15, borderRadius: 14, alignItems: "center" },
   botaoTexto: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
+  avisoServidor: { marginTop: 12, textAlign: "center", fontSize: 13, color: t.muted, lineHeight: 18 },
   linkWrap: { marginTop: 16, alignItems: "center" },
   linkTexto: { color: t.muted, fontSize: 13 },
   linkDestaque: { color: t.primary, fontWeight: "700" },
-});
+});

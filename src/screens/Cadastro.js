@@ -4,6 +4,7 @@ import { MaskedTextInput } from "react-native-mask-text";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../theme";
 import { useRegistro } from "../hooks/useAuth";
+import { useDemora } from "../hooks/useDemora";
 
 export default function Cadastro({ navigation }) {
   const { t } = useTheme();
@@ -15,6 +16,7 @@ export default function Cadastro({ navigation }) {
   const [telefone, SetTelefone] = useState("");
   const [mostrarSenha, SetMostrarSenha] = useState(false);
   const registro = useRegistro();
+  const demorou = useDemora(registro.isPending);
 
   function salvar() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -106,6 +108,12 @@ export default function Cadastro({ navigation }) {
           {registro.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.botaoTexto}>Criar conta</Text>}
         </TouchableOpacity>
 
+        {demorou && (
+          <Text style={s.avisoServidor}>
+            Conectando ao servidor. Na primeira vez do dia isso pode levar até 1 minuto.
+          </Text>
+        )}
+
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.linkWrap}>
           <Text style={s.linkTexto}>
             Já tem conta? <Text style={s.linkDestaque}>Entrar</Text>
@@ -144,7 +152,8 @@ const styles = (t) => StyleSheet.create({
   olho: { paddingHorizontal: 12 },
   botao: { marginTop: 8, backgroundColor: t.primary, paddingVertical: 15, borderRadius: 14, alignItems: "center" },
   botaoTexto: { color: "#fff", fontWeight: "700", fontSize: 16, letterSpacing: 0.3 },
+  avisoServidor: { marginTop: 12, textAlign: "center", fontSize: 13, color: t.muted, lineHeight: 18 },
   linkWrap: { marginTop: 16, alignItems: "center" },
   linkTexto: { color: t.muted, fontSize: 13 },
   linkDestaque: { color: t.primary, fontWeight: "700" },
-});
+});
