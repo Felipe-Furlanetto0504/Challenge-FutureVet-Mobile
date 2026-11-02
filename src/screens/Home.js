@@ -4,11 +4,8 @@ import { useTheme } from "../theme";
 import { useSessao } from "../hooks/useAuth";
 import { useAnimais } from "../hooks/useAnimais";
 import { useVacinas } from "../hooks/useVacinas";
-import { useLeiturasColeira } from "../hooks/useLeiturasColeira";
-import { FONTE_LEITURAS } from "../services/coleira";
+import { useConsultas } from "../hooks/useConsultas";
 import { emojiEspecie } from "../utils/especie";
-
-const ROTULO_SEVERIDADE = { critica: "crítica", media: "média", baixa: "baixa" };
 
 export default function Home({ navigation }) {
   const { t } = useTheme();
@@ -18,14 +15,11 @@ export default function Home({ navigation }) {
   const { data: pets = [], refetch: refetchPets, isRefetching: atualizandoPets } = useAnimais();
   const { data: vacinas = [], refetch: refetchVacinas, isRefetching: atualizandoVacinas } = useVacinas();
 
- 
-  const petColeira = pets[0] || null;
-  const coleira = useLeiturasColeira(petColeira);
-  const s = coleira.ultima?.sensors;
-  const simulado = FONTE_LEITURAS === "simulador";
+  const { data: consultas = [], refetch: refetchConsultas, isRefetching: atualizandoConsultas } = useConsultas();
+  const consultasAtivas = consultas.filter((c) => c.status === "AGENDADA" || c.status === "CONFIRMADA");
 
   async function aoAtualizar() {
-    await Promise.all([refetchPets(), refetchVacinas(), coleira.novaLeitura()]);
+    await Promise.all([refetchPets(), refetchVacinas(), refetchConsultas()]);
   }
 
   const vacinasOrdenadas = [...vacinas]
@@ -49,7 +43,7 @@ export default function Home({ navigation }) {
   const primeiroNome = usuario?.nome?.split(" ")[0] || "";
   const horaAtual = new Date().getHours();
   const saudacao = horaAtual < 12 ? "Bom dia" : horaAtual < 18 ? "Boa tarde" : "Boa noite";
-  const atualizando = atualizandoPets || atualizandoVacinas || coleira.gerandoLeitura;
+  const atualizando = atualizandoPets || atualizandoVacinas || atualizandoConsultas;
 
   return (
     <ScrollView
@@ -78,7 +72,7 @@ export default function Home({ navigation }) {
           {[
             { val: pets.length, label: "Pets", cor: t.primary, icone: "paw", lib: "fa5" },
             { val: vacinas.length, label: "Vacinas", cor: t.success, icone: "vaccines", lib: "material" },
-            { val: s ? (coleira.alerta ? "Alerta" : "OK") : "—", label: "Saúde", cor: t.warning, icone: "favorite", lib: "material" },
+            { val: consultasAtivas.length, label: "Consultas", cor: t.warning, icone: "event", lib: "material" },
           ].map((item, i, arr) => (
             <View key={item.label} style={[strip.item, i < arr.length - 1 && { borderRightWidth: 1, borderRightColor: t.border }]}>
               {item.lib === "fa5"
@@ -95,7 +89,7 @@ export default function Home({ navigation }) {
           {[
             { icone: "vaccines", lib: "material", cor: "#fff", bg: t.primary, label: "Vacinas", sub: `${vacinas.length} registros`, tela: "Vacinas", destaque: true },
             { icone: "stethoscope", lib: "fa5", cor: "#fff", bg: t.success, label: "Consultas", sub: "Agendar", tela: "Consultas", destaque: true },
-            { icone: "sensors", lib: "material", cor: t.warning, bg: t.warningBg, label: "Monitor", sub: simulado ? "Simulado" : "Online", tela: "Monitoramento", destaque: false },
+            { icone: "sensors", lib: "material", cor: t.warning, bg: t.warningBg, label: "Monitor", sub: "Coleira", tela: "Monitoramento", destaque: false },
             { icone: "paw", lib: "fa5", cor: t.primary, bg: t.primaryBg, label: "Perfil", sub: `${pets.length} pets`, tela: "Perfil", destaque: false },
           ].map((a) => (
             <TouchableOpacity key={a.label} activeOpacity={0.8}
@@ -115,65 +109,6 @@ export default function Home({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
-
-        <View style={sec.header}>
-          <Text style={[sec.titulo, { color: t.text }]}>Monitoramento IoT</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Monitoramento")}>
-            <Text style={[sec.link, { color: t.primary }]}>Ver mais</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity activeOpacity={0.85}
-          style={[iot_card.wrap, { backgroundColor: t.surfaceCard, borderColor: t.border }]}
-          onPress={() => navigation.navigate("Monitoramento")}>
-
-          <View style={iot_card.top}>
-            <View style={iot_card.petRow}>
-              <View style={[iot_card.petIcone, { backgroundColor: t.primaryBg }]}>
-                <FontAwesome5 name="paw" size={13} color={t.primary} />
-              </View>
-              <Text style={[iot_card.petNome, { color: t.text }]}>{petColeira?.nome || "Coleira"}</Text>
-            </View>
-            <View style={[iot_card.badge, { backgroundColor: simulado ? t.primaryBg : t.successBg }]}>
-              <View style={[iot_card.dot, { backgroundColor: simulado ? t.primary : t.success }]} />
-              <Text style={[iot_card.badgeTexto, { color: simulado ? t.primary : t.success }]}>
-                {simulado ? "Simulado" : "Online"}
-              </Text>
-            </View>
-          </View>
-
-          {s ? (
-            <View style={iot_card.sensores}>
-              {[
-                { icone: "thermostat", cor: t.danger, val: `${s.temperature_celsius}°C`, label: "Temperatura", bg: t.dangerBg },
-                { icone: "favorite", cor: t.primary, val: `${s.heart_rate_bpm}`, label: "BPM", bg: t.primaryBg },
-                { icone: "directions-run", cor: t.warning, val: `${s.steps_last_minute}`, label: "Passos/min", bg: t.warningBg },
-              ].map((item) => (
-                <View key={item.label} style={[iot_card.sensor, { backgroundColor: item.bg }]}>
-                  <MaterialIcons name={item.icone} size={16} color={item.cor} />
-                  <Text style={[iot_card.sensorVal, { color: item.cor }]}>{item.val}</Text>
-                  <Text style={[iot_card.sensorLabel, { color: item.cor + "AA" }]}>{item.label}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={iot_card.vazio}>
-              <MaterialIcons name="wifi-off" size={20} color={t.muted2} />
-              <Text style={[iot_card.vazioTexto, { color: t.muted2 }]}>
-                Cadastre um pet no Perfil para ver a coleira
-              </Text>
-            </View>
-          )}
-
-          <View style={[iot_card.rodape, { borderTopColor: t.border }]}>
-            <View style={iot_card.scoreRow}>
-              <Text style={[iot_card.scoreLabel, { color: t.muted }]}>Modelo preditivo</Text>
-              <Text style={[iot_card.scoreVal, { color: coleira.alerta ? t.danger : t.text }]}>
-                {!s ? "—" : coleira.alerta ? `Anomalia ${ROTULO_SEVERIDADE[coleira.alerta.severity]}` : "Sem anomalias"}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
 
         <View style={sec.header}>
           <Text style={[sec.titulo, { color: t.text }]}>Próximas Doses</Text>
@@ -286,29 +221,6 @@ const atalhos = StyleSheet.create({
   sub: { fontSize: 12, fontWeight: "500" },
 });
 
-const iot_card = StyleSheet.create({
-  wrap: { borderRadius: 20, padding: 18, borderWidth: 1, marginBottom: 4 },
-  top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  petRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  petIcone: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  petNome: { fontSize: 15, fontWeight: "700" },
-  badge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  badgeTexto: { fontSize: 11, fontWeight: "700" },
-  sensores: { flexDirection: "row", gap: 8, marginBottom: 16 },
-  sensor: { flex: 1, borderRadius: 14, padding: 12, alignItems: "center", gap: 4 },
-  sensorVal: { fontSize: 18, fontWeight: "800" },
-  sensorLabel: { fontSize: 10, fontWeight: "600", textAlign: "center" },
-  vazio: { alignItems: "center", paddingVertical: 20, gap: 8, marginBottom: 16 },
-  vazioTexto: { fontSize: 13, textAlign: "center" },
-  rodape: { borderTopWidth: 1, paddingTop: 14, gap: 8 },
-  scoreRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  scoreLabel: { fontSize: 12, fontWeight: "500" },
-  scoreVal: { fontSize: 13, fontWeight: "700" },
-  barFundo: { height: 6, borderRadius: 3, overflow: "hidden" },
-  barPreenchida: { height: 6, borderRadius: 3 },
-});
-
 const vac = StyleSheet.create({
   vazio: { alignItems: "center", paddingVertical: 28, borderRadius: 18, gap: 10, borderWidth: 1, marginBottom: 4 },
   vazioIcone: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
@@ -332,4 +244,4 @@ const petCard = StyleSheet.create({
   tags: { flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "center" },
   tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   tagTexto: { fontSize: 10, fontWeight: "600" },
-});
+});
