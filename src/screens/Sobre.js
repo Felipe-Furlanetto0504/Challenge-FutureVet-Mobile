@@ -13,23 +13,29 @@ const INTEGRANTES = [
 
 const LINKS = {
   github: "https://github.com/Felipe-Furlanetto0504/Challenge-FutureVet-Mobile",
-  video:  "https://youtu.be/wy1oHOzKFvE",
+  video:  "https://github.com/Felipe-Furlanetto0504/Challenge-FutureVet-Mobile#-v%C3%ADdeo",
 };
 
-// Preenchidos no build pelo app.config.js
 const VERSAO = Constants.expoConfig?.version ?? "-";
 const COMMIT = Constants.expoConfig?.extra?.commitHash ?? "-";
 
+const FUNCIONALIDADES = [
+  { icone: "vaccines",         cor: "#4A90E2", nome: "Carteira de vacinação", detalhe: "Doses registradas por pet, com aviso de atrasadas e próximas" },
+  { icone: "event",            cor: "#27ae60", nome: "Consultas com a clínica", detalhe: "Agendar, reagendar e cancelar, com lembrete 1 hora antes" },
+  { icone: "notifications",    cor: "#f39c12", nome: "Notificações",           detalhe: "Aviso quando a clínica confirma, cancela ou registra uma vacina" },
+  { icone: "sensors",          cor: "#9b59b6", nome: "Coleira inteligente",    detalhe: "Sinais vitais e modelo preditivo de anomalias (leituras simuladas)" },
+];
+
 const TECNOLOGIAS = [
-  { icone: "phone-android",  cor: "#4A90E2", nome: "React Native",  detalhe: "Interface mobile multiplataforma"   },
-  { icone: "storage",        cor: "#27ae60", nome: "AsyncStorage",  detalhe: "Persistência local de dados"         },
-  { icone: "sensors",        cor: "#f39c12", nome: "ESP32-S3",      detalhe: "Microcontrolador IoT da coleira"     },
-  { icone: "wifi",           cor: "#9b59b6", nome: "MQTT / HTTP",   detalhe: "Protocolos de comunicação IoT"       },
-  { icone: "computer",       cor: "#e74c3c", nome: "Wokwi",         detalhe: "Simulador de circuitos online"       },
-  { icone: "cloud",          cor: "#1abc9c", nome: "HiveMQ",        detalhe: "Broker MQTT na nuvem"                },
-  { icone: "thermostat",     cor: "#e67e22", nome: "DS18B20",       detalhe: "Sensor de temperatura corporal"      },
-  { icone: "favorite",       cor: "#e74c3c", nome: "MAX30102",      detalhe: "Sensor de frequência cardíaca"       },
-  { icone: "directions-run", cor: "#3498db", nome: "MPU-6050",      detalhe: "Acelerômetro — detecção de atividade"},
+  { icone: "phone-android", cor: "#4A90E2", nome: "React Native + Expo",       detalhe: "App mobile multiplataforma (SDK 54)"            },
+  { icone: "navigation",    cor: "#3498db", nome: "React Navigation",          detalhe: "Abas e rotas protegidas pela sessão"            },
+  { icone: "sync",          cor: "#1abc9c", nome: "TanStack Query",            detalhe: "Cache e sincronização com a API"                },
+  { icone: "dns",           cor: "#e67e22", nome: "API Java / Spring Boot",    detalhe: "Backend REST publicado no Render"               },
+  { icone: "lock",          cor: "#e74c3c", nome: "JWT",                       detalhe: "Autenticação e sessão persistente"              },
+  { icone: "notifications", cor: "#f39c12", nome: "expo-notifications",        detalhe: "Notificações locais e lembretes"                },
+  { icone: "storage",       cor: "#27ae60", nome: "AsyncStorage",              detalhe: "Sessão, tema e lembretes no aparelho"           },
+  { icone: "build",         cor: "#9b59b6", nome: "EAS Build",                 detalhe: "Geração do APK Android"                         },
+  { icone: "cloud-upload",  cor: "#4A90E2", nome: "Firebase App Distribution", detalhe: "Distribuição do app para testers"               },
 ];
 
 export default function Sobre() {
@@ -57,8 +63,8 @@ export default function Sobre() {
         <Text style={[styles.cabecalhoNome, { color: t.text }]}>FutureVet</Text>
         <Text style={[styles.cabecalhoVersao, { color: t.muted }]}>v{VERSAO} · FIAP 2026</Text>
         <Text style={[styles.cabecalhoDescricao, { color: t.text2 }]}>
-          Monitoramento inteligente da saúde dos seus pets via IoT, com sensores
-          conectados em tempo real e gestão completa de vacinas e consultas.
+          A saúde do seu pet em um só lugar: vacinas, consultas com a clínica
+          e avisos sempre que algo muda no atendimento.
         </Text>
       </View>
 
@@ -81,10 +87,11 @@ export default function Sobre() {
           <MaterialIcons name="help-outline" size={22} color={t.danger} />
         </View>
         <View style={styles.cardInfo}>
-          <Text style={[styles.cardNome, { color: t.text }]}>Saúde invisível entre consultas</Text>
+          <Text style={[styles.cardNome, { color: t.text }]}>Cuidados espalhados e esquecidos</Text>
           <Text style={[styles.cardDetalhe, { color: t.text2 }]}>
-            Tutores não têm como monitorar a saúde do pet no dia a dia. Febre, alterações
-            cardíacas e inatividade passam despercebidas até a próxima visita ao veterinário.
+            Vacinas e consultas ficam anotadas em papéis e mensagens. Doses atrasam,
+            horários são esquecidos e o tutor só descobre que a clínica confirmou ou
+            cancelou um atendimento quando liga para perguntar.
           </Text>
         </View>
       </View>
@@ -95,19 +102,32 @@ export default function Sobre() {
           <MaterialIcons name="lightbulb-outline" size={22} color={t.warning} />
         </View>
         <View style={styles.cardInfo}>
-          <Text style={[styles.cardNome, { color: t.text }]}>Coleira inteligente + app</Text>
+          <Text style={[styles.cardNome, { color: t.text }]}>App conectado à clínica</Text>
           <Text style={[styles.cardDetalhe, { color: t.text2 }]}>
-            Uma coleira com ESP32-S3 coleta temperatura corporal, frequência cardíaca
-            e nível de atividade continuamente. Os dados chegam via MQTT ao app,
-            que alerta o tutor em tempo real e mantém o histórico de saúde do pet.
+            O FutureVet reúne pets, vacinas e consultas em um app ligado à API da clínica.
+            Cada confirmação, cancelamento ou vacina registrada vira uma notificação no
+            celular do tutor, que abre direto na tela certa.
           </Text>
         </View>
       </View>
 
+      <Text style={[styles.secaoTitulo, { color: t.text }]}>O que o app faz</Text>
+      {FUNCIONALIDADES.map((f) => (
+        <View key={f.nome} style={[styles.card, { backgroundColor: t.surfaceCard }]}>
+          <View style={[styles.cardIcone, { backgroundColor: f.cor + "20" }]}>
+            <MaterialIcons name={f.icone} size={22} color={f.cor} />
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={[styles.cardNome, { color: t.text }]}>{f.nome}</Text>
+            <Text style={[styles.cardDetalhe, { color: t.text2 }]}>{f.detalhe}</Text>
+          </View>
+        </View>
+      ))}
+
       <Text style={[styles.secaoTitulo, { color: t.text }]}>Entregáveis</Text>
       {[
         { icone: "code",               bg: t.surfaceCard, cor: t.text,    nome: "Repositório GitHub",      url: LINKS.github, urlLabel: LINKS.github },
-        { icone: "play-circle-outline", bg: t.dangerBg,   cor: t.danger,  nome: "Vídeo Pitch — YouTube",   url: LINKS.video,  urlLabel: LINKS.video  },
+        { icone: "play-circle-outline", bg: t.dangerBg,   cor: t.danger,  nome: "Vídeo da Sprint 4",   url: LINKS.video,  urlLabel: "Link na seção Vídeo do README"  },
       ].map((item) => (
         <TouchableOpacity key={item.nome}
           style={[styles.cardLink, { backgroundColor: t.surfaceCard, borderColor: t.border }]}
@@ -154,7 +174,7 @@ export default function Sobre() {
       <View style={[styles.rodape, { borderTopColor: t.divisor }]}>
         <FontAwesome5 name="paw" size={14} color={t.muted2} />
         <Text style={[styles.rodapeTexto, { color: t.muted2 }]}>
-          FIAP · Disruptive Architectures: IoT, IoB & Generative IA · Mobile Application Development · 4ª Sprint 2026
+          FIAP · Mobile Application Development · Challenge 2026 · Sprint 4
         </Text>
       </View>
     </ScrollView>
