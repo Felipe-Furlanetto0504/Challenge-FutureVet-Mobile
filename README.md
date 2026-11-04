@@ -277,4 +277,4 @@ eas build -p android --profile preview
 
 ## 🎥 Vídeo
 
-📺 **Sprint 4:** LINK_DO_VIDEO
+📺 **Sprint 4:** https://youtu.be/rpl7_FdFwog?si=wEKf39iBLd3z4wmQ
